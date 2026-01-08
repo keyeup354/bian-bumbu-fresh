@@ -1,12 +1,111 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Header from '@/components/Header';
+import Hero from '@/components/Hero';
+import CategoryCard from '@/components/CategoryCard';
+import ProductCard from '@/components/ProductCard';
+import CartSlideout from '@/components/CartSlideout';
+import Footer from '@/components/Footer';
+import { categories, featuredProducts } from '@/data/products';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <CartSlideout />
+
+      <main>
+        {/* Hero Section */}
+        <Hero />
+
+        {/* Categories Section */}
+        <section className="py-16 md:py-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-10">
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
+                Kategori Produk
+              </h2>
+              <p className="text-muted-foreground max-w-xl mx-auto">
+                Temukan berbagai kebutuhan dapur Anda dengan mudah
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {categories.map((category) => (
+                <CategoryCard key={category.id} {...category} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Products Section */}
+        <section className="py-16 md:py-20 bg-card">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
+              <div>
+                <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
+                  Produk Unggulan
+                </h2>
+                <p className="text-muted-foreground">
+                  Pilihan terbaik untuk masakan Anda
+                </p>
+              </div>
+              <Link to="/products">
+                <Button variant="outline" className="group">
+                  Lihat Semua
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 md:py-20">
+          <div className="container mx-auto px-4">
+            <div className="bg-hero-gradient rounded-3xl p-8 md:p-12 text-center">
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
+                Pesan Sekarang via WhatsApp
+              </h2>
+              <p className="text-primary-foreground/80 max-w-xl mx-auto mb-8">
+                Tidak perlu ribet! Cukup pilih produk, masukkan ke keranjang, dan langsung pesan melalui WhatsApp.
+              </p>
+              <Button variant="whatsapp" size="xl" className="rounded-full">
+                Hubungi Kami di WhatsApp
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Trust Badges */}
+        <section className="py-12 border-t border-border">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              {[
+                { icon: '🥬', title: 'Selalu Segar', desc: 'Dipetik setiap hari' },
+                { icon: '🚚', title: 'Antar Cepat', desc: 'Sampai dalam 2 jam' },
+                { icon: '💯', title: 'Kualitas Terjamin', desc: 'Bahan pilihan terbaik' },
+                { icon: '💬', title: 'Mudah Dipesan', desc: 'Via WhatsApp langsung' },
+              ].map((item) => (
+                <div key={item.title} className="p-4">
+                  <span className="text-4xl mb-3 block">{item.icon}</span>
+                  <h4 className="font-display font-semibold text-foreground mb-1">{item.title}</h4>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
     </div>
   );
 };
