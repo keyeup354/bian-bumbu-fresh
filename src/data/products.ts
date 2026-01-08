@@ -1,5 +1,19 @@
 import { Product } from '@/contexts/CartContext';
 
+// Import product images
+import tomatImg from '@/assets/products/tomat.jpg';
+import bayamImg from '@/assets/products/bayam.jpg';
+import tempeImg from '@/assets/products/tempe.jpg';
+import tahuImg from '@/assets/products/tahu.jpg';
+import bawangMerahImg from '@/assets/products/bawang-merah.jpg';
+import bawangPutihImg from '@/assets/products/bawang-putih.jpg';
+import cabaiImg from '@/assets/products/cabai.jpg';
+import jaheImg from '@/assets/products/jahe.jpg';
+import kacangPanjangImg from '@/assets/products/kacang-panjang.jpg';
+import timunImg from '@/assets/products/timun.jpg';
+import kubisImg from '@/assets/products/kubis.jpg';
+import wortelImg from '@/assets/products/wortel.jpg';
+
 export const categories = [
   { id: 'vegetables', name: 'Sayuran Segar', icon: '🥬', description: 'Fresh vegetables daily' },
   { id: 'spices', name: 'Bumbu & Rempah', icon: '🌶️', description: 'Authentic spices' },
@@ -7,52 +21,80 @@ export const categories = [
   { id: 'essentials', name: 'Kebutuhan Dapur', icon: '🧅', description: 'Kitchen essentials' },
 ];
 
-export const products: Product[] = [
+export interface ExtendedProduct extends Product {
+  isFlashSale?: boolean;
+  flashSalePrice?: number;
+  flashSaleEndsAt?: Date;
+  stock?: number;
+}
+
+export const products: ExtendedProduct[] = [
   // Vegetables
   {
     id: 'v1',
-    name: 'Kangkung Segar',
-    price: 5000,
-    unit: 'per ikat',
-    image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&h=400&fit=crop',
+    name: 'Tomat Merah Segar',
+    price: 12000,
+    unit: 'per 500g',
+    image: tomatImg,
     category: 'vegetables',
-    description: 'Kangkung hijau segar, cocok untuk tumis atau lalapan',
+    description: 'Tomat merah segar berkualitas tinggi, cocok untuk sambal atau masakan. Dipetik langsung dari kebun pilihan.',
+    isFlashSale: true,
+    flashSalePrice: 8000,
+    flashSaleEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    stock: 50,
   },
   {
     id: 'v2',
     name: 'Bayam Hijau',
     price: 4000,
     unit: 'per ikat',
-    image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&h=400&fit=crop',
+    image: bayamImg,
     category: 'vegetables',
-    description: 'Bayam segar untuk sayur bening atau tumisan',
+    description: 'Bayam segar hijau untuk sayur bening atau tumisan. Kaya akan zat besi dan vitamin.',
+    stock: 100,
   },
   {
     id: 'v3',
     name: 'Wortel Lokal',
     price: 8000,
     unit: 'per 250g',
-    image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400&h=400&fit=crop',
+    image: wortelImg,
     category: 'vegetables',
-    description: 'Wortel manis dan renyah',
+    description: 'Wortel manis dan renyah, cocok untuk sup, jus, atau campuran masakan.',
+    stock: 80,
   },
   {
     id: 'v4',
-    name: 'Brokoli Segar',
-    price: 15000,
-    unit: 'per 250g',
-    image: 'https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=400&fit=crop',
+    name: 'Kacang Panjang',
+    price: 6000,
+    unit: 'per ikat',
+    image: kacangPanjangImg,
     category: 'vegetables',
-    description: 'Brokoli hijau segar berkualitas',
+    description: 'Kacang panjang segar untuk tumis atau lalapan.',
+    isFlashSale: true,
+    flashSalePrice: 4500,
+    flashSaleEndsAt: new Date(Date.now() + 12 * 60 * 60 * 1000),
+    stock: 60,
   },
   {
     id: 'v5',
-    name: 'Kol Putih',
+    name: 'Kubis Putih',
     price: 10000,
     unit: 'per kg',
-    image: 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=400&h=400&fit=crop',
+    image: kubisImg,
     category: 'vegetables',
-    description: 'Kol segar untuk asinan atau tumisan',
+    description: 'Kubis segar untuk asinan, tumisan, atau sayur sop.',
+    stock: 40,
+  },
+  {
+    id: 'v6',
+    name: 'Timun Segar',
+    price: 5000,
+    unit: 'per 500g',
+    image: timunImg,
+    category: 'vegetables',
+    description: 'Timun segar dan renyah untuk lalapan atau acar.',
+    stock: 70,
   },
   // Spices
   {
@@ -60,45 +102,23 @@ export const products: Product[] = [
     name: 'Cabai Merah Keriting',
     price: 45000,
     unit: 'per kg',
-    image: 'https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400&h=400&fit=crop',
+    image: cabaiImg,
     category: 'spices',
-    description: 'Cabai merah keriting pedas',
+    description: 'Cabai merah keriting pedas, cocok untuk sambal dan bumbu masakan.',
+    isFlashSale: true,
+    flashSalePrice: 35000,
+    flashSaleEndsAt: new Date(Date.now() + 6 * 60 * 60 * 1000),
+    stock: 30,
   },
   {
     id: 's2',
-    name: 'Cabai Rawit Merah',
-    price: 55000,
-    unit: 'per kg',
-    image: 'https://images.unsplash.com/photo-1583119022894-919a68a3d0e3?w=400&h=400&fit=crop',
-    category: 'spices',
-    description: 'Cabai rawit merah super pedas',
-  },
-  {
-    id: 's3',
     name: 'Jahe Emprit',
     price: 25000,
     unit: 'per 250g',
-    image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400&h=400&fit=crop',
+    image: jaheImg,
     category: 'spices',
-    description: 'Jahe emprit segar untuk bumbu dan minuman',
-  },
-  {
-    id: 's4',
-    name: 'Kunyit Segar',
-    price: 15000,
-    unit: 'per 250g',
-    image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400&h=400&fit=crop',
-    category: 'spices',
-    description: 'Kunyit segar untuk bumbu masakan',
-  },
-  {
-    id: 's5',
-    name: 'Lengkuas',
-    price: 12000,
-    unit: 'per 250g',
-    image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400&h=400&fit=crop',
-    category: 'spices',
-    description: 'Lengkuas segar untuk rendang dan opor',
+    description: 'Jahe emprit segar untuk bumbu masakan dan minuman hangat.',
+    stock: 45,
   },
   // Protein
   {
@@ -106,36 +126,23 @@ export const products: Product[] = [
     name: 'Tahu Putih',
     price: 5000,
     unit: 'per 4 pcs',
-    image: 'https://images.unsplash.com/photo-1628703200091-4f8a92c2e8a2?w=400&h=400&fit=crop',
+    image: tahuImg,
     category: 'protein',
-    description: 'Tahu putih lembut, fresh dari pabrik',
+    description: 'Tahu putih lembut dan fresh dari pabrik. Cocok untuk goreng, bacem, atau masak sayur.',
+    stock: 100,
   },
   {
     id: 'p2',
-    name: 'Tahu Kuning',
-    price: 6000,
-    unit: 'per 4 pcs',
-    image: 'https://images.unsplash.com/photo-1628703200091-4f8a92c2e8a2?w=400&h=400&fit=crop',
-    category: 'protein',
-    description: 'Tahu kuning goreng, siap masak',
-  },
-  {
-    id: 'p3',
-    name: 'Tempe Mendoan',
+    name: 'Tempe Segar',
     price: 8000,
     unit: 'per pack',
-    image: 'https://images.unsplash.com/photo-1628703200091-4f8a92c2e8a2?w=400&h=400&fit=crop',
+    image: tempeImg,
     category: 'protein',
-    description: 'Tempe tipis untuk goreng mendoan',
-  },
-  {
-    id: 'p4',
-    name: 'Tempe Gembus',
-    price: 7000,
-    unit: 'per pack',
-    image: 'https://images.unsplash.com/photo-1628703200091-4f8a92c2e8a2?w=400&h=400&fit=crop',
-    category: 'protein',
-    description: 'Tempe gembus segar',
+    description: 'Tempe segar berkualitas, dibuat dari kedelai pilihan. Kaya protein nabati.',
+    isFlashSale: true,
+    flashSalePrice: 6000,
+    flashSaleEndsAt: new Date(Date.now() + 18 * 60 * 60 * 1000),
+    stock: 80,
   },
   // Essentials
   {
@@ -143,46 +150,45 @@ export const products: Product[] = [
     name: 'Bawang Merah',
     price: 35000,
     unit: 'per kg',
-    image: 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400&h=400&fit=crop',
+    image: bawangMerahImg,
     category: 'essentials',
-    description: 'Bawang merah Brebes berkualitas',
+    description: 'Bawang merah Brebes berkualitas tinggi untuk bumbu dapur.',
+    stock: 50,
   },
   {
     id: 'e2',
     name: 'Bawang Putih',
     price: 40000,
     unit: 'per kg',
-    image: 'https://images.unsplash.com/photo-1540148426945-6cf22a6b2f85?w=400&h=400&fit=crop',
+    image: bawangPutihImg,
     category: 'essentials',
-    description: 'Bawang putih tunggal import',
-  },
-  {
-    id: 'e3',
-    name: 'Bawang Bombay',
-    price: 25000,
-    unit: 'per kg',
-    image: 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400&h=400&fit=crop',
-    category: 'essentials',
-    description: 'Bawang bombay segar',
-  },
-  {
-    id: 'e4',
-    name: 'Daun Bawang',
-    price: 5000,
-    unit: 'per ikat',
-    image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&h=400&fit=crop',
-    category: 'essentials',
-    description: 'Daun bawang segar untuk pelengkap masakan',
-  },
-  {
-    id: 'e5',
-    name: 'Serai',
-    price: 3000,
-    unit: 'per ikat',
-    image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&h=400&fit=crop',
-    category: 'essentials',
-    description: 'Serai segar untuk bumbu dan minuman',
+    description: 'Bawang putih tunggal import, aroma kuat dan tahan lama.',
+    stock: 60,
   },
 ];
 
-export const featuredProducts = products.slice(0, 8);
+export const featuredProducts = products.filter(p => p.isFlashSale || products.indexOf(p) < 6);
+
+export const flashSaleProducts = products.filter(p => p.isFlashSale);
+
+export const promotions = [
+  {
+    id: 'promo1',
+    title: 'Flash Sale Sayuran',
+    description: 'Diskon hingga 30% untuk semua sayuran segar!',
+    discountPercentage: 30,
+    isActive: true,
+  },
+  {
+    id: 'promo2',
+    title: 'Gratis Ongkir',
+    description: 'Gratis ongkir untuk pembelian minimal Rp 50.000',
+    isActive: true,
+  },
+  {
+    id: 'promo3',
+    title: 'Paket Hemat Bumbu',
+    description: 'Beli 3 gratis 1 untuk semua bumbu dapur',
+    isActive: true,
+  },
+];

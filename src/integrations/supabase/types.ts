@@ -14,7 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          id: string
+          items: Json
+          notes: string | null
+          status: string
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          id?: string
+          items: Json
+          notes?: string | null
+          status?: string
+          total_amount: number
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          delivery_address?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: string
+          total_amount?: number
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          flash_sale_ends_at: string | null
+          flash_sale_price: number | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          is_flash_sale: boolean | null
+          name: string
+          price: number
+          stock: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          flash_sale_ends_at?: string | null
+          flash_sale_price?: number | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_flash_sale?: boolean | null
+          name: string
+          price: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          flash_sale_ends_at?: string | null
+          flash_sale_price?: number | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          is_flash_sale?: boolean | null
+          name?: string
+          price?: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          banner_image_url: string | null
+          created_at: string
+          description: string | null
+          discount_percentage: number | null
+          ends_at: string | null
+          id: string
+          is_active: boolean | null
+          starts_at: string | null
+          title: string
+        }
+        Insert: {
+          banner_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          discount_percentage?: number | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          starts_at?: string | null
+          title: string
+        }
+        Update: {
+          banner_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          discount_percentage?: number | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          starts_at?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

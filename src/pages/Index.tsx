@@ -4,20 +4,45 @@ import CategoryCard from '@/components/CategoryCard';
 import ProductCard from '@/components/ProductCard';
 import CartSlideout from '@/components/CartSlideout';
 import Footer from '@/components/Footer';
-import { categories, featuredProducts } from '@/data/products';
+import FlashSaleBanner from '@/components/FlashSaleBanner';
+import PromoBanner from '@/components/PromoBanner';
+import DeliverySection from '@/components/DeliverySection';
+import { categories, featuredProducts, flashSaleProducts } from '@/data/products';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <FlashSaleBanner />
       <Header />
       <CartSlideout />
 
       <main>
-        {/* Hero Section */}
         <Hero />
+        <PromoBanner />
+
+        {/* Flash Sale Section */}
+        {flashSaleProducts.length > 0 && (
+          <section className="py-12 md:py-16 bg-gradient-to-r from-terracotta/5 to-terracotta/10">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="bg-terracotta rounded-full p-2 animate-pulse">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">
+                  Flash Sale ⚡
+                </h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {flashSaleProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Categories Section */}
         <section className="py-16 md:py-20">
@@ -30,7 +55,6 @@ const Index = () => {
                 Temukan berbagai kebutuhan dapur Anda dengan mudah
               </p>
             </div>
-
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {categories.map((category) => (
                 <CategoryCard key={category.id} {...category} />
@@ -38,6 +62,9 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        {/* Delivery CTA Section */}
+        <DeliverySection />
 
         {/* Featured Products Section */}
         <section className="py-16 md:py-20 bg-card">
@@ -47,9 +74,7 @@ const Index = () => {
                 <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
                   Produk Unggulan
                 </h2>
-                <p className="text-muted-foreground">
-                  Pilihan terbaik untuk masakan Anda
-                </p>
+                <p className="text-muted-foreground">Pilihan terbaik untuk masakan Anda</p>
               </div>
               <Link to="/products">
                 <Button variant="outline" className="group">
@@ -58,28 +83,10 @@ const Index = () => {
                 </Button>
               </Link>
             </div>
-
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {featuredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-16 md:py-20">
-          <div className="container mx-auto px-4">
-            <div className="bg-hero-gradient rounded-3xl p-8 md:p-12 text-center">
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-                Pesan Sekarang via WhatsApp
-              </h2>
-              <p className="text-primary-foreground/80 max-w-xl mx-auto mb-8">
-                Tidak perlu ribet! Cukup pilih produk, masukkan ke keranjang, dan langsung pesan melalui WhatsApp.
-              </p>
-              <Button variant="whatsapp" size="xl" className="rounded-full">
-                Hubungi Kami di WhatsApp
-              </Button>
             </div>
           </div>
         </section>
