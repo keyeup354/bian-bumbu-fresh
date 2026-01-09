@@ -1,9 +1,21 @@
-import { X, Minus, Plus, Trash2, ShoppingBag, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
+import { X, Minus, Plus, Trash2, ShoppingBag, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useCart } from '@/contexts/CartContext';
+import { toast } from 'sonner';
+
+const WEBHOOK_URL = 'https://hook.us2.make.com/u22jvkbbispk8mr2efjteedpm14gi9n7';
 
 const CartSlideout = () => {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get saved address from localStorage
+  const savedAddress = localStorage.getItem('userAddress') || '';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -13,24 +25,58 @@ const CartSlideout = () => {
     }).format(price);
   };
 
-  const handleWhatsAppCheckout = () => {
-    const phoneNumber = '6285793874290';
-    
-    let message = '🛒 *Pesanan Baru dari Bian Bumbu*\n\n';
-    message += '*Detail Pesanan:*\n';
-    message += '─────────────────\n';
-    
-    items.forEach((item, index) => {
-      message += `${index + 1}. ${item.name}\n`;
-      message += `   ${item.quantity}x ${formatPrice(item.price)} = ${formatPrice(item.price * item.quantity)}\n`;
-    });
-    
-    message += '─────────────────\n';
-    message += `*Total: ${formatPrice(totalPrice)}*\n\n`;
-    message += 'Mohon konfirmasi ketersediaan dan ongkir. Terima kasih! 🙏';
+  const handleSubmitOrder = async () => {
+    if (!customerName.trim()) {
+      toast.error('Mohon masukkan nama Anda');
+      return;
+    }
+    if (!customerPhone.trim()) {
+      toast.error('Mohon masukkan nomor HP Anda');
+      return;
+    }
+    if (items.length === 0) {
+      toast.error('Keranjang belanja kosong');
+      return;
+    }
 
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
+    setIsSubmitting(true);
+
+    const orderData = {
+      nama: customerName.trim(),
+      alamat: savedAddress,
+      no_hp: customerPhone.trim(),
+      daftar_belanjaan: items.map(item => ({
+        nama_produk: item.name,
+        jumlah: item.quantity,
+        satuan: item.unit,
+        harga_satuan: item.price,
+        subtotal: item.price * item.quantity
+      })),
+      total: totalPrice,
+      waktu_pesanan: new Date().toISOString()
+    };
+
+    try {
+      await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify(orderData),
+      });
+
+      toast.success('Pesanan berhasil dikirim! Kami akan segera menghubungi Anda.');
+      clearCart();
+      setCustomerName('');
+      setCustomerPhone('');
+      setIsCartOpen(false);
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      toast.error('Gagal mengirim pesanan. Silakan coba lagi.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isCartOpen) return null;
@@ -120,26 +166,62 @@ const CartSlideout = () => {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer with Form */}
         {items.length > 0 && (
           <div className="border-t border-border p-4 space-y-4">
+            {/* Customer Form */}
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="customerName">Nama</Label>
+                <Input
+                  id="customerName"
+                  placeholder="Masukkan nama Anda"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="customerPhone">No. HP</Label>
+                <Input
+                  id="customerPhone"
+                  placeholder="Contoh: 08123456789"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
+              {savedAddress && (
+                <div className="text-sm text-muted-foreground bg-muted p-2 rounded-lg">
+                  <span className="font-medium">Alamat:</span> {savedAddress}
+                </div>
+              )}
+            </div>
+
             {/* Summary */}
-            <div className="flex items-center justify-between text-lg">
+            <div className="flex items-center justify-between text-lg pt-2 border-t border-border">
               <span className="text-muted-foreground">Total</span>
               <span className="font-display font-bold text-xl text-primary">
                 {formatPrice(totalPrice)}
               </span>
             </div>
 
-            {/* Checkout Button */}
+            {/* Submit Order Button */}
             <Button
-              variant="whatsapp"
               size="xl"
               className="w-full rounded-xl"
-              onClick={handleWhatsAppCheckout}
+              onClick={handleSubmitOrder}
+              disabled={isSubmitting}
             >
-              <MessageCircle className="w-5 h-5" />
-              Pesan via WhatsApp
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Mengirim Pesanan...
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  Kirim Pesanan
+                </>
+              )}
             </Button>
 
             {/* Clear Cart */}
@@ -147,6 +229,7 @@ const CartSlideout = () => {
               variant="ghost"
               className="w-full text-muted-foreground"
               onClick={clearCart}
+              disabled={isSubmitting}
             >
               Kosongkan Keranjang
             </Button>
