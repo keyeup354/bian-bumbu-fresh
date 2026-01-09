@@ -14,7 +14,7 @@ const CartSlideout = () => {
   };
 
   const handleWhatsAppCheckout = () => {
-    const phoneNumber = '6281234567890'; // Replace with actual WhatsApp number
+    const phoneNumber = '6285793874290';
     
     let message = '🛒 *Pesanan Baru dari Bian Bumbu*\n\n';
     message += '*Detail Pesanan:*\n';
