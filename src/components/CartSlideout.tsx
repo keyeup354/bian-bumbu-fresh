@@ -41,19 +41,18 @@ const CartSlideout = () => {
 
     setIsSubmitting(true);
 
+    // Format pesanan sebagai string yang rapi
+    const pesananList = items.map(item => 
+      `${item.name} x${item.quantity} ${item.unit} = ${formatPrice(item.price * item.quantity)}`
+    ).join('\n');
+    
+    const pesananText = `${pesananList}\n\nTotal: ${formatPrice(totalPrice)}`;
+
     const orderData = {
       nama: customerName.trim(),
       alamat: savedAddress,
-      no_hp: customerPhone.trim(),
-      daftar_belanjaan: items.map(item => ({
-        nama_produk: item.name,
-        jumlah: item.quantity,
-        satuan: item.unit,
-        harga_satuan: item.price,
-        subtotal: item.price * item.quantity
-      })),
-      total: totalPrice,
-      waktu_pesanan: new Date().toISOString()
+      telepon: customerPhone.trim(),
+      pesanan: pesananText
     };
 
     try {
