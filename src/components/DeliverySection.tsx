@@ -3,11 +3,10 @@ import { Button } from '@/components/ui/button';
 
 const DeliverySection = () => {
   const handleWhatsAppCall = () => {
-    const phoneNumber = '6281234567890'; // Replace with actual number
+    const phoneNumber = '6285793874290';
     const message = encodeURIComponent('Halo, saya ingin memesan sayuran segar dari Bian Bumbu. Bisa dibantu?');
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
-
   return (
     <section className="py-16 md:py-20 bg-gradient-to-br from-primary/5 via-background to-terracotta/5">
       <div className="container mx-auto px-4">
@@ -34,7 +33,7 @@ const DeliverySection = () => {
                   <Clock className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">2 Jam Sampai</p>
+                  <p className="font-semibold text-foreground">30 Menit - 1 Jam</p>
                   <p className="text-sm text-muted-foreground">Pengiriman cepat</p>
                 </div>
               </div>
@@ -43,8 +42,8 @@ const DeliverySection = () => {
                   <MapPin className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">Area Luas</p>
-                  <p className="text-sm text-muted-foreground">Jangkauan lebar</p>
+                  <p className="font-semibold text-foreground">Bandung Only</p>
+                  <p className="text-sm text-muted-foreground">Area pengiriman</p>
                 </div>
               </div>
             </div>

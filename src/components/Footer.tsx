@@ -18,7 +18,7 @@ const Footer = () => {
             </p>
             <div className="flex gap-3">
               <a
-                href="https://wa.me/6281234567890"
+                href="https://wa.me/6285793874290"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full flex items-center justify-center transition-colors"
@@ -69,12 +69,12 @@ const Footer = () => {
               <li className="flex items-start gap-3 text-sm">
                 <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span className="text-primary-foreground/80">
-                  Jl. Pasar Tradisional No. 123, Jakarta
+                  Bandung, Jawa Barat
                 </span>
               </li>
               <li className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 flex-shrink-0" />
-                <span className="text-primary-foreground/80">+62 812-3456-7890</span>
+                <span className="text-primary-foreground/80">+62 857-9387-4290</span>
               </li>
               <li className="flex items-center gap-3 text-sm">
                 <Clock className="w-4 h-4 flex-shrink-0" />

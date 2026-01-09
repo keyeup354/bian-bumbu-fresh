@@ -97,7 +97,7 @@ const Index = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
               {[
                 { icon: '🥬', title: 'Selalu Segar', desc: 'Dipetik setiap hari' },
-                { icon: '🚚', title: 'Antar Cepat', desc: 'Sampai dalam 2 jam' },
+                { icon: '🚚', title: 'Antar Cepat', desc: '30 menit - 1 jam' },
                 { icon: '💯', title: 'Kualitas Terjamin', desc: 'Bahan pilihan terbaik' },
                 { icon: '💬', title: 'Mudah Dipesan', desc: 'Via WhatsApp langsung' },
               ].map((item) => (
