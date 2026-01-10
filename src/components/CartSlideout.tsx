@@ -48,11 +48,26 @@ const CartSlideout = () => {
     
     const pesananText = `${pesananList}\n\nTotal: ${formatPrice(totalPrice)}`;
 
+    // Format tanggal dan jam
+    const now = new Date();
+    const tanggal = now.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).replace(/\//g, '-');
+    const jam = now.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
     const orderData = {
       nama: customerName.trim(),
       alamat: savedAddress,
       telepon: customerPhone.trim(),
-      pesanan: pesananText
+      pesanan: pesananText,
+      tanggal: tanggal,
+      jam: jam
     };
 
     try {
