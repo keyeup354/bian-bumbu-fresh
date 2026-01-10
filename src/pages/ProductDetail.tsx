@@ -1,9 +1,10 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Minus, Plus, ShoppingCart, Share2, Heart, Zap } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, ShoppingCart, Share2, Heart, Zap, Leaf, Apple } from 'lucide-react';
 import { useState } from 'react';
 import Header from '@/components/Header';
 import CartSlideout from '@/components/CartSlideout';
 import Footer from '@/components/Footer';
+import ProductGallery from '@/components/ProductGallery';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
@@ -88,19 +89,16 @@ const ProductDetail = () => {
 
         {/* Product Detail */}
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-          {/* Image */}
+          {/* Image Gallery */}
           <div className="relative">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-card border border-border">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <ProductGallery 
+              images={product.gallery || [product.image]} 
+              productName={product.name} 
+            />
             
             {/* Flash Sale Badge */}
             {product.isFlashSale && (
-              <div className="absolute top-4 left-4">
+              <div className="absolute top-4 left-4 z-10">
                 <Badge className="bg-terracotta text-white px-3 py-1.5 text-sm font-bold animate-pulse">
                   <Zap className="w-4 h-4 mr-1" />
                   FLASH SALE -{discountPercentage}%
@@ -109,7 +107,7 @@ const ProductDetail = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
+            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
               <Button variant="secondary" size="icon" className="rounded-full bg-white/80 backdrop-blur-sm">
                 <Heart className="w-5 h-5" />
               </Button>
@@ -161,6 +159,32 @@ const ProductDetail = () => {
               <h3 className="font-semibold mb-2">Deskripsi Produk</h3>
               <p className="text-muted-foreground">{product.description}</p>
             </div>
+
+            {/* Health Benefits */}
+            {product.healthBenefits && (
+              <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Leaf className="w-4 h-4 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-primary">Manfaat Kesehatan</h3>
+                </div>
+                <p className="text-foreground/80 text-sm leading-relaxed">{product.healthBenefits}</p>
+              </div>
+            )}
+
+            {/* Nutrition Info */}
+            {product.nutrition && (
+              <div className="bg-muted/50 rounded-xl p-4 border border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <Apple className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-semibold">Kandungan Gizi</h3>
+                </div>
+                <p className="text-muted-foreground text-sm">{product.nutrition}</p>
+              </div>
+            )}
 
             {/* Quantity Selector */}
             <div className="flex items-center gap-4">
