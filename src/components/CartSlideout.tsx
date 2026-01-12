@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
-
-const WEBHOOK_URL = 'https://hook.us2.make.com/u22jvkbbispk8mr2efjteedpm14gi9n7';
+import { supabase } from '@/integrations/supabase/client';
 
 const CartSlideout = () => {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
@@ -25,15 +24,32 @@ const CartSlideout = () => {
     }).format(price);
   };
 
+  // Phone validation (Indonesian format)
+  const isValidPhone = (phone: string): boolean => {
+    const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{7,10}$/;
+    return phoneRegex.test(phone.replace(/[\s-]/g, ''));
+  };
+
   const handleSubmitOrder = async () => {
-    if (!customerName.trim()) {
-      toast.error('Mohon masukkan nama Anda');
+    // Client-side validation
+    const trimmedName = customerName.trim();
+    const trimmedPhone = customerPhone.trim();
+
+    if (trimmedName.length < 2) {
+      toast.error('Nama minimal 2 karakter');
       return;
     }
-    if (!customerPhone.trim()) {
-      toast.error('Mohon masukkan nomor HP Anda');
+
+    if (!isValidPhone(trimmedPhone)) {
+      toast.error('Format nomor HP tidak valid. Contoh: 08123456789');
       return;
     }
+
+    if (!savedAddress || savedAddress.length < 10) {
+      toast.error('Alamat pengiriman tidak valid');
+      return;
+    }
+
     if (items.length === 0) {
       toast.error('Keranjang belanja kosong');
       return;
@@ -41,44 +57,33 @@ const CartSlideout = () => {
 
     setIsSubmitting(true);
 
-    // Format pesanan sebagai string yang rapi
-    const pesananList = items.map(item => 
-      `${item.name} x${item.quantity} ${item.unit} = ${formatPrice(item.price * item.quantity)}`
-    ).join('\n');
-    
-    const pesananText = `${pesananList}\n\nTotal: ${formatPrice(totalPrice)}`;
-
-    // Format tanggal dan jam
-    const now = new Date();
-    const tanggal = now.toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }).replace(/\//g, '-');
-    const jam = now.toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-
-    const orderData = {
-      nama: customerName.trim(),
-      alamat: savedAddress,
-      telepon: customerPhone.trim(),
-      pesanan: pesananText,
-      tanggal: tanggal,
-      jam: jam
-    };
-
     try {
-      await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Send to edge function for server-side validation and processing
+      const { data, error } = await supabase.functions.invoke('process-order', {
+        body: {
+          customerName: trimmedName,
+          customerPhone: trimmedPhone,
+          deliveryAddress: savedAddress,
+          items: items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            unit: item.unit,
+          })),
         },
-        mode: 'no-cors',
-        body: JSON.stringify(orderData),
       });
+
+      if (error) {
+        console.error('Order submission error:', error);
+        toast.error('Gagal mengirim pesanan. Silakan coba lagi.');
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
 
       toast.success('Pesanan berhasil dikirim! Kami akan segera menghubungi Anda.');
       clearCart();
@@ -192,6 +197,7 @@ const CartSlideout = () => {
                   placeholder="Masukkan nama Anda"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
+                  maxLength={100}
                 />
               </div>
               <div className="space-y-1.5">
@@ -201,6 +207,7 @@ const CartSlideout = () => {
                   placeholder="Contoh: 08123456789"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
+                  maxLength={20}
                 />
               </div>
               {savedAddress && (

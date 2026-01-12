@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Edit2, Trash2, Package, Tag, DollarSign, Image, Save, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Package, Tag, DollarSign, Image, Save, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,14 +7,55 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { products as initialProducts, categories, ExtendedProduct } from '@/data/products';
+import { categories } from '@/data/products';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import AdminLogin from '@/components/AdminLogin';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  unit: string;
+  image_url: string | null;
+  category: string;
+  description: string | null;
+  is_flash_sale: boolean | null;
+  flash_sale_price: number | null;
+  stock: number;
+}
 
 const Admin = () => {
-  const [products, setProducts] = useState<ExtendedProduct[]>(initialProducts);
+  const { user, isAdmin, isLoading, signOut } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<ExtendedProduct>>({});
+  const [editForm, setEditForm] = useState<Partial<Product>>({});
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+  // Fetch products from database
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching products:', error);
+        toast.error('Gagal memuat produk');
+      } else {
+        setProducts(data || []);
+      }
+      setIsLoadingProducts(false);
+    };
+
+    if (isAdmin) {
+      fetchProducts();
+    }
+  }, [isAdmin]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -24,39 +65,81 @@ const Admin = () => {
     }).format(price);
   };
 
-  const handleEdit = (product: ExtendedProduct) => {
+  const handleEdit = (product: Product) => {
     setIsEditing(product.id);
     setEditForm(product);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isAdding) {
-      const newProduct: ExtendedProduct = {
-        id: `new-${Date.now()}`,
-        name: editForm.name || '',
-        price: editForm.price || 0,
-        unit: editForm.unit || 'per pack',
-        image: editForm.image || '',
-        category: editForm.category || 'vegetables',
-        description: editForm.description || '',
-        isFlashSale: editForm.isFlashSale || false,
-        flashSalePrice: editForm.flashSalePrice,
-        stock: editForm.stock || 100,
-      };
-      setProducts([...products, newProduct]);
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          name: editForm.name || '',
+          price: editForm.price || 0,
+          unit: editForm.unit || 'per pack',
+          image_url: editForm.image_url || '',
+          category: editForm.category || 'vegetables',
+          description: editForm.description || '',
+          is_flash_sale: editForm.is_flash_sale || false,
+          flash_sale_price: editForm.flash_sale_price,
+          stock: editForm.stock || 100,
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        toast.error('Gagal menambah produk: ' + error.message);
+        return;
+      }
+      
+      setProducts([data, ...products]);
+      toast.success('Produk berhasil ditambahkan');
       setIsAdding(false);
     } else if (isEditing) {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: editForm.name,
+          price: editForm.price,
+          unit: editForm.unit,
+          image_url: editForm.image_url,
+          category: editForm.category,
+          description: editForm.description,
+          is_flash_sale: editForm.is_flash_sale,
+          flash_sale_price: editForm.flash_sale_price,
+          stock: editForm.stock,
+        })
+        .eq('id', isEditing);
+      
+      if (error) {
+        toast.error('Gagal memperbarui produk: ' + error.message);
+        return;
+      }
+      
       setProducts(products.map(p => 
-        p.id === isEditing ? { ...p, ...editForm } : p
+        p.id === isEditing ? { ...p, ...editForm } as Product : p
       ));
+      toast.success('Produk berhasil diperbarui');
       setIsEditing(null);
     }
     setEditForm({});
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        toast.error('Gagal menghapus produk: ' + error.message);
+        return;
+      }
+      
       setProducts(products.filter(p => p.id !== id));
+      toast.success('Produk berhasil dihapus');
     }
   };
 
@@ -72,13 +155,35 @@ const Admin = () => {
       name: '',
       price: 0,
       unit: 'per pack',
-      image: '',
+      image_url: '',
       category: 'vegetables',
       description: '',
-      isFlashSale: false,
+      is_flash_sale: false,
       stock: 100,
     });
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Berhasil keluar');
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated or not admin
+  if (!user || !isAdmin) {
+    return <AdminLogin />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,9 +197,17 @@ const Admin = () => {
               </div>
               <span className="font-display text-xl font-bold text-primary">Admin Dashboard</span>
             </Link>
-            <Link to="/">
-              <Button variant="outline">Kembali ke Toko</Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                {user.email}
+              </span>
+              <Link to="/">
+                <Button variant="outline" size="sm">Kembali ke Toko</Button>
+              </Link>
+              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -119,7 +232,7 @@ const Admin = () => {
                 <Tag className="w-5 h-5 text-terracotta" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{products.filter(p => p.isFlashSale).length}</p>
+                <p className="text-2xl font-bold">{products.filter(p => p.is_flash_sale).length}</p>
                 <p className="text-sm text-muted-foreground">Flash Sale</p>
               </div>
             </div>
@@ -215,8 +328,8 @@ const Admin = () => {
                 <div className="space-y-2">
                   <Label>URL Gambar</Label>
                   <Input
-                    value={editForm.image || ''}
-                    onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
+                    value={editForm.image_url || ''}
+                    onChange={(e) => setEditForm({ ...editForm, image_url: e.target.value })}
                     placeholder="URL gambar produk"
                   />
                 </div>
@@ -231,18 +344,18 @@ const Admin = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Switch
-                      checked={editForm.isFlashSale || false}
-                      onCheckedChange={(checked) => setEditForm({ ...editForm, isFlashSale: checked })}
+                      checked={editForm.is_flash_sale || false}
+                      onCheckedChange={(checked) => setEditForm({ ...editForm, is_flash_sale: checked })}
                     />
                     <Label>Flash Sale</Label>
                   </div>
-                  {editForm.isFlashSale && (
+                  {editForm.is_flash_sale && (
                     <div className="space-y-2">
                       <Label>Harga Flash Sale</Label>
                       <Input
                         type="number"
-                        value={editForm.flashSalePrice || ''}
-                        onChange={(e) => setEditForm({ ...editForm, flashSalePrice: Number(e.target.value) })}
+                        value={editForm.flash_sale_price || ''}
+                        onChange={(e) => setEditForm({ ...editForm, flash_sale_price: Number(e.target.value) })}
                         placeholder="Harga promo"
                       />
                     </div>
@@ -263,60 +376,67 @@ const Admin = () => {
           )}
 
           {/* Product List */}
-          <div className="divide-y divide-border">
-            {products.map((product) => (
-              <div key={product.id} className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-16 h-16 rounded-lg object-cover"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold truncate">{product.name}</h3>
-                    {product.isFlashSale && (
-                      <Badge className="bg-terracotta text-white">Flash Sale</Badge>
+          {isLoadingProducts ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Memuat produk...</p>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              Belum ada produk. Klik "Tambah Produk" untuk memulai.
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {products.map((product) => (
+                <div key={product.id} className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors">
+                  <img
+                    src={product.image_url || '/placeholder.svg'}
+                    alt={product.name}
+                    className="w-16 h-16 rounded-lg object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold truncate">{product.name}</h3>
+                      {product.is_flash_sale && (
+                        <Badge className="bg-terracotta text-white">Flash Sale</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{product.unit}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-primary">{formatPrice(product.price)}</p>
+                    {product.is_flash_sale && product.flash_sale_price && (
+                      <p className="text-sm text-terracotta">{formatPrice(product.flash_sale_price)}</p>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{product.unit}</p>
+                  <div className="text-center">
+                    <p className="font-semibold">{product.stock}</p>
+                    <p className="text-xs text-muted-foreground">stok</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(product)}
+                      disabled={isEditing !== null || isAdding}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(product.id)}
+                      disabled={isEditing !== null || isAdding}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-primary">{formatPrice(product.price)}</p>
-                  {product.isFlashSale && product.flashSalePrice && (
-                    <p className="text-sm text-terracotta">{formatPrice(product.flashSalePrice)}</p>
-                  )}
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold">{product.stock}</p>
-                  <p className="text-xs text-muted-foreground">stok</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(product)}
-                    disabled={isEditing !== null || isAdding}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(product.id)}
-                    disabled={isEditing !== null || isAdding}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-
-        <p className="text-center text-muted-foreground text-sm mt-8">
-          💡 Tip: Untuk menyimpan perubahan secara permanen, hubungkan ke database Lovable Cloud
-        </p>
       </main>
     </div>
   );
