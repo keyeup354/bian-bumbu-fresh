@@ -126,14 +126,14 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Extract product IDs from order items
-    const productIds = body.items.map((item: OrderItem) => sanitizeString(item.id, 50));
+    // Extract product names from order items (using name since client uses local non-UUID IDs)
+    const productNames = body.items.map((item: OrderItem) => sanitizeString(item.name, 200));
 
     // Fetch actual prices from database to prevent price manipulation
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('id, name, price, is_flash_sale, flash_sale_price, stock, unit')
-      .in('id', productIds);
+      .in('name', productNames);
 
     if (productsError || !products) {
       console.error('Failed to fetch products:', productsError);
@@ -143,18 +143,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create a lookup map for products
-    const productMap = new Map(products.map(p => [p.id, p]));
+    // Create a lookup map for products by name
+    const productMap = new Map(products.map(p => [p.name, p]));
 
     // Validate all products exist and build validated items with SERVER prices
     const validatedItems: OrderItem[] = [];
     for (const item of body.items) {
-      const itemId = sanitizeString(item.id, 50);
-      const product = productMap.get(itemId);
+      const itemName = sanitizeString(item.name, 200);
+      const product = productMap.get(itemName);
       
       if (!product) {
         return new Response(
-          JSON.stringify({ error: `Product not found: ${sanitizeString(item.name, 50)}` }),
+          JSON.stringify({ error: `Product not found: ${itemName}` }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -177,14 +177,14 @@ Deno.serve(async (req) => {
       // Log price mismatch for monitoring (potential manipulation attempt)
       if (Math.abs(item.price - serverPrice) > 0.01) {
         console.warn('Price mismatch detected:', {
-          productId: itemId,
+          productName: itemName,
           clientPrice: item.price,
           serverPrice: serverPrice
         });
       }
 
       validatedItems.push({
-        id: itemId,
+        id: product.id, // Use database UUID
         name: sanitizeString(product.name, 200), // Use server-side name
         price: serverPrice, // USE SERVER PRICE - prevents manipulation!
         quantity: quantity,
