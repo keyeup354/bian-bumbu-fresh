@@ -120,26 +120,83 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Sanitize items
-    const sanitizedItems = body.items.map((item: OrderItem) => ({
-      id: sanitizeString(item.id, 50),
-      name: sanitizeString(item.name, 200),
-      price: Math.max(0, Math.min(item.price, 100000000)),
-      quantity: Math.max(1, Math.min(Math.floor(item.quantity), 1000)),
-      unit: sanitizeString(item.unit, 50),
-    }));
-
-    // Calculate total
-    const totalAmount = sanitizedItems.reduce(
-      (sum: number, item: OrderItem) => sum + (item.price * item.quantity),
-      0
-    );
-
-    // Create Supabase client with service role for inserting order
+    // Create Supabase client with service role for database operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Extract product IDs from order items
+    const productIds = body.items.map((item: OrderItem) => sanitizeString(item.id, 50));
+
+    // Fetch actual prices from database to prevent price manipulation
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id, name, price, is_flash_sale, flash_sale_price, stock, unit')
+      .in('id', productIds);
+
+    if (productsError || !products) {
+      console.error('Failed to fetch products:', productsError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to validate products' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create a lookup map for products
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    // Validate all products exist and build validated items with SERVER prices
+    const validatedItems: OrderItem[] = [];
+    for (const item of body.items) {
+      const itemId = sanitizeString(item.id, 50);
+      const product = productMap.get(itemId);
+      
+      if (!product) {
+        return new Response(
+          JSON.stringify({ error: `Product not found: ${sanitizeString(item.name, 50)}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const quantity = Math.max(1, Math.min(Math.floor(item.quantity), 1000));
+
+      // Check stock availability
+      if (product.stock < quantity) {
+        return new Response(
+          JSON.stringify({ error: `Insufficient stock for ${product.name}. Available: ${product.stock}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Use SERVER price (flash sale price if applicable, otherwise regular price)
+      const serverPrice = product.is_flash_sale && product.flash_sale_price 
+        ? Number(product.flash_sale_price) 
+        : Number(product.price);
+
+      // Log price mismatch for monitoring (potential manipulation attempt)
+      if (Math.abs(item.price - serverPrice) > 0.01) {
+        console.warn('Price mismatch detected:', {
+          productId: itemId,
+          clientPrice: item.price,
+          serverPrice: serverPrice
+        });
+      }
+
+      validatedItems.push({
+        id: itemId,
+        name: sanitizeString(product.name, 200), // Use server-side name
+        price: serverPrice, // USE SERVER PRICE - prevents manipulation!
+        quantity: quantity,
+        unit: sanitizeString(product.unit, 50), // Use server-side unit
+      });
+    }
+
+    // Calculate total using validated server prices
+    const totalAmount = validatedItems.reduce(
+      (sum: number, item: OrderItem) => sum + (item.price * item.quantity),
+      0
+    );
 
     // Insert order into database
     const { data: order, error: insertError } = await supabase
@@ -148,7 +205,7 @@ Deno.serve(async (req) => {
         customer_name: customerName,
         customer_phone: customerPhone,
         delivery_address: deliveryAddress,
-        items: sanitizedItems,
+        items: validatedItems,
         total_amount: totalAmount,
         notes: notes,
         status: 'pending'
@@ -186,7 +243,7 @@ Deno.serve(async (req) => {
       }).format(price);
     };
 
-    const pesananList = sanitizedItems.map((item: OrderItem) => 
+    const pesananList = validatedItems.map((item: OrderItem) => 
       `${item.name} x${item.quantity} ${item.unit} = ${formatPrice(item.price * item.quantity)}`
     ).join('\n');
     
