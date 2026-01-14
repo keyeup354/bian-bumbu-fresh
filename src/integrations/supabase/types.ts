@@ -53,14 +53,17 @@ export type Database = {
       products: {
         Row: {
           category: string
+          cooking_tips: string | null
           created_at: string
           description: string | null
           flash_sale_ends_at: string | null
           flash_sale_price: number | null
+          health_benefits: string | null
           id: string
           image_url: string | null
           is_featured: boolean | null
           is_flash_sale: boolean | null
+          media_urls: string[] | null
           name: string
           price: number
           stock: number
@@ -69,14 +72,17 @@ export type Database = {
         }
         Insert: {
           category: string
+          cooking_tips?: string | null
           created_at?: string
           description?: string | null
           flash_sale_ends_at?: string | null
           flash_sale_price?: number | null
+          health_benefits?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
           is_flash_sale?: boolean | null
+          media_urls?: string[] | null
           name: string
           price: number
           stock?: number
@@ -85,14 +91,17 @@ export type Database = {
         }
         Update: {
           category?: string
+          cooking_tips?: string | null
           created_at?: string
           description?: string | null
           flash_sale_ends_at?: string | null
           flash_sale_price?: number | null
+          health_benefits?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean | null
           is_flash_sale?: boolean | null
+          media_urls?: string[] | null
           name?: string
           price?: number
           stock?: number
