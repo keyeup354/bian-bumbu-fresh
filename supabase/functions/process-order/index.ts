@@ -62,6 +62,33 @@ function validateItems(items: unknown): items is OrderItem[] {
   );
 }
 
+// Rate limiting configuration
+const RATE_LIMIT_MAX_ORDERS = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+// Check rate limit for phone number
+// deno-lint-ignore no-explicit-any
+async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
+  const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+  
+  // Normalize phone number for consistent matching
+  const normalizedPhone = phone.replace(/[\s-]/g, '');
+  
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('customer_phone', normalizedPhone)
+    .gte('created_at', oneHourAgo);
+  
+  if (error) {
+    console.error('Rate limit check error:', error);
+    // Fail open - allow the request if rate limit check fails
+    return true;
+  }
+  
+  return !data || data.length < RATE_LIMIT_MAX_ORDERS;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -125,6 +152,15 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check rate limit - limit to 5 orders per phone number per hour
+    const withinRateLimit = await checkRateLimit(customerPhone, supabase);
+    if (!withinRateLimit) {
+      return new Response(
+        JSON.stringify({ error: 'Too many orders. Please wait before placing another order.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Extract product names from order items (using name since client uses local non-UUID IDs)
     const productNames = body.items.map((item: OrderItem) => sanitizeString(item.name, 200));
