@@ -1,17 +1,16 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Validation schema for order data
 interface OrderItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
-  unit: string;
+  unit?: string;
 }
 
 interface OrderData {
@@ -22,24 +21,25 @@ interface OrderData {
   notes?: string;
 }
 
-// Sanitize string input to prevent XSS
+// Sanitize string inputs to prevent XSS and injection attacks
 function sanitizeString(input: string, maxLength: number = 500): string {
   if (typeof input !== 'string') return '';
   return input
     .trim()
     .slice(0, maxLength)
-    .replace(/[<>]/g, '') // Remove basic XSS characters
+    .replace(/[<>]/g, '') // Remove potential HTML tags
     .replace(/javascript:/gi, '') // Remove javascript: protocol
     .replace(/on\w+=/gi, ''); // Remove event handlers
 }
 
 // Validate phone number format (Indonesian format)
 function isValidPhone(phone: string): boolean {
-  const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{7,10}$/;
+  // Allow Indonesian phone formats: 08xx, +628xx, 628xx
+  const phoneRegex = /^(\+62|62|0)8[1-9][0-9]{7,11}$/;
   return phoneRegex.test(phone.replace(/[\s-]/g, ''));
 }
 
-// Validate order items
+// Validate order items structure
 function validateItems(items: unknown): items is OrderItem[] {
   if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
     return false;
@@ -52,13 +52,10 @@ function validateItems(items: unknown): items is OrderItem[] {
     typeof item.name === 'string' &&
     typeof item.price === 'number' &&
     typeof item.quantity === 'number' &&
-    typeof item.unit === 'string' &&
-    item.price >= 0 &&
-    item.price <= 100000000 && // Max 100 million IDR per item
-    item.quantity >= 1 &&
+    item.quantity > 0 &&
     item.quantity <= 1000 &&
-    item.name.length <= 200 &&
-    item.unit.length <= 50
+    item.price >= 0 &&
+    item.price <= 100000000
   );
 }
 
@@ -88,6 +85,9 @@ async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
   
   return !data || data.length < RATE_LIMIT_MAX_ORDERS;
 }
+
+// Webhook URL for Google Sheets integration via Make.com
+const WEBHOOK_URL = 'https://hook.us2.make.com/u22jvkbbispk8mr2efjteedpm14gi9n7';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -200,42 +200,33 @@ Deno.serve(async (req) => {
       // Check stock availability
       if (product.stock < quantity) {
         return new Response(
-          JSON.stringify({ error: `Insufficient stock for ${product.name}. Available: ${product.stock}` }),
+          JSON.stringify({ error: `Insufficient stock for ${itemName}. Available: ${product.stock}` }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Use SERVER price (flash sale price if applicable, otherwise regular price)
+      // Use SERVER-SIDE price, not client-provided price
       const serverPrice = product.is_flash_sale && product.flash_sale_price 
-        ? Number(product.flash_sale_price) 
-        : Number(product.price);
-
-      // Log price mismatch for monitoring (potential manipulation attempt)
-      if (Math.abs(item.price - serverPrice) > 0.01) {
-        console.warn('Price mismatch detected:', {
-          productName: itemName,
-          clientPrice: item.price,
-          serverPrice: serverPrice
-        });
-      }
+        ? product.flash_sale_price 
+        : product.price;
 
       validatedItems.push({
-        id: product.id, // Use database UUID
-        name: sanitizeString(product.name, 200), // Use server-side name
-        price: serverPrice, // USE SERVER PRICE - prevents manipulation!
+        id: product.id,
+        name: product.name,
+        price: serverPrice,
         quantity: quantity,
-        unit: sanitizeString(product.unit, 50), // Use server-side unit
+        unit: product.unit || item.unit,
       });
     }
 
     // Calculate total using validated server prices
     const totalAmount = validatedItems.reduce(
-      (sum: number, item: OrderItem) => sum + (item.price * item.quantity),
+      (sum, item) => sum + (item.price * item.quantity),
       0
     );
 
     // Insert order into database
-    const { data: order, error: insertError } = await supabase
+    const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         customer_name: customerName,
@@ -244,68 +235,72 @@ Deno.serve(async (req) => {
         items: validatedItems,
         total_amount: totalAmount,
         notes: notes,
-        status: 'pending'
+        status: 'pending',
       })
       .select()
       .single();
 
-    if (insertError) {
-      console.error('Database error:', insertError);
+    if (orderError) {
+      console.error('Failed to create order:', orderError);
       return new Response(
-        JSON.stringify({ error: 'Failed to save order' }),
+        JSON.stringify({ error: 'Failed to create order' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Format date and time for webhook
+    // Format order items for webhook
+    const pesananText = validatedItems
+      .map(item => `${item.name} x${item.quantity} (${item.unit || 'pcs'})`)
+      .join(', ');
+
+    // Get current date and time in Indonesia timezone
     const now = new Date();
-    const tanggal = now.toLocaleDateString('id-ID', {
+    const indonesiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const tanggal = indonesiaTime.toLocaleDateString('id-ID', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
-    }).replace(/\//g, '-');
-    const jam = now.toLocaleTimeString('id-ID', {
+    });
+    const jam = indonesiaTime.toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
     });
 
-    // Format order text for webhook
-    const formatPrice = (price: number) => {
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-      }).format(price);
-    };
+    // Send data to webhook (Google Sheets via Make.com)
+    try {
+      const webhookPayload = {
+        nama: customerName,
+        alamat: deliveryAddress,
+        telepon: customerPhone,
+        pesanan: pesananText,
+        tanggal: tanggal,
+        jam: jam,
+        total: totalAmount,
+        order_id: order.id,
+        catatan: notes || ''
+      };
 
-    const pesananList = validatedItems.map((item: OrderItem) => 
-      `${item.name} x${item.quantity} ${item.unit} = ${formatPrice(item.price * item.quantity)}`
-    ).join('\n');
-    
-    const pesananText = `${pesananList}\n\nTotal: ${formatPrice(totalAmount)}`;
+      console.log('Sending webhook payload:', JSON.stringify(webhookPayload));
 
-    // Send to webhook (optional - won't fail if webhook is down)
-    const webhookUrl = Deno.env.get('WEBHOOK_URL');
-    if (webhookUrl) {
-      try {
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nama: customerName,
-            alamat: deliveryAddress,
-            telepon: customerPhone,
-            pesanan: pesananText,
-            tanggal: tanggal,
-            jam: jam,
-            order_id: order.id
-          }),
-        });
-      } catch (webhookError) {
-        console.error('Webhook error (non-fatal):', webhookError);
-        // Don't fail the order if webhook fails
+      const webhookResponse = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload),
+      });
+
+      if (!webhookResponse.ok) {
+        console.error('Webhook failed with status:', webhookResponse.status);
+        const responseText = await webhookResponse.text();
+        console.error('Webhook response:', responseText);
+      } else {
+        console.log('Webhook sent successfully');
       }
+    } catch (webhookError) {
+      // Log webhook error but don't fail the order
+      console.error('Webhook error:', webhookError);
     }
 
     return new Response(
@@ -318,9 +313,9 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error processing order:', error);
+    console.error('Order processing error:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to process order' }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
