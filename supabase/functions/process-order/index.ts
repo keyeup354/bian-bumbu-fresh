@@ -268,6 +268,8 @@ Deno.serve(async (req) => {
     });
 
     // Send data to webhook (Google Sheets via Make.com)
+    const webhookUrl = 'https://hook.us2.make.com/u22jvkbbispk8mr2efjteedpm14gi9n7';
+    
     try {
       const webhookPayload = {
         nama: customerName,
@@ -281,26 +283,46 @@ Deno.serve(async (req) => {
         catatan: notes || ''
       };
 
-      console.log('Sending webhook payload:', JSON.stringify(webhookPayload));
+      console.log('=== WEBHOOK DEBUG START ===');
+      console.log('Webhook URL:', webhookUrl);
+      console.log('Webhook payload:', JSON.stringify(webhookPayload, null, 2));
 
-      const webhookResponse = await fetch(WEBHOOK_URL, {
+      const webhookResponse = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify(webhookPayload),
       });
 
-      if (!webhookResponse.ok) {
-        console.error('Webhook failed with status:', webhookResponse.status);
-        const responseText = await webhookResponse.text();
-        console.error('Webhook response:', responseText);
-      } else {
-        console.log('Webhook sent successfully');
+      const responseStatus = webhookResponse.status;
+      const responseStatusText = webhookResponse.statusText;
+      let responseBody = '';
+      
+      try {
+        responseBody = await webhookResponse.text();
+      } catch (readError) {
+        responseBody = 'Could not read response body';
       }
+
+      console.log('Webhook response status:', responseStatus, responseStatusText);
+      console.log('Webhook response body:', responseBody);
+
+      if (!webhookResponse.ok) {
+        console.error('Webhook failed! Status:', responseStatus);
+        console.error('Response details:', responseBody);
+      } else {
+        console.log('Webhook sent successfully!');
+      }
+      console.log('=== WEBHOOK DEBUG END ===');
+
     } catch (webhookError) {
-      // Log webhook error but don't fail the order
-      console.error('Webhook error:', webhookError);
+      console.error('=== WEBHOOK ERROR ===');
+      console.error('Error type:', webhookError instanceof Error ? webhookError.name : 'Unknown');
+      console.error('Error message:', webhookError instanceof Error ? webhookError.message : String(webhookError));
+      console.error('Full error:', webhookError);
+      console.error('=== WEBHOOK ERROR END ===');
     }
 
     return new Response(
