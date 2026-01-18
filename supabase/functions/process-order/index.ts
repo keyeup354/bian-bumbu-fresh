@@ -59,13 +59,20 @@ function validateItems(items: unknown): items is OrderItem[] {
   );
 }
 
-// Rate limiting configuration
+// Rate limiting configuration - DISABLED FOR TESTING
+const RATE_LIMIT_ENABLED = false; // Set to true to enable rate limiting
 const RATE_LIMIT_MAX_ORDERS = 5;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 // Check rate limit for phone number
 // deno-lint-ignore no-explicit-any
 async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
+  // Rate limiting disabled for testing
+  if (!RATE_LIMIT_ENABLED) {
+    console.log('Rate limiting is DISABLED for testing');
+    return true;
+  }
+
   const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
   
   // Normalize phone number for consistent matching
@@ -86,8 +93,8 @@ async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
   return !data || data.length < RATE_LIMIT_MAX_ORDERS;
 }
 
-// Webhook URL for Google Sheets integration via Make.com
-const WEBHOOK_URL = 'https://hook.us2.make.com/u22jvkbbispk8mr2efjteedpm14gi9n7';
+// Webhook URL for Google Sheets integration via Google Apps Script
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx4UHpbeIkmYCwInoLj2YuGsNlwwl6CYQOTTAACwLMQFxV8MbjqoIkuHa4TDpciN3fn/exec';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -267,33 +274,27 @@ Deno.serve(async (req) => {
       hour12: false
     });
 
-    // Send data to webhook (Google Sheets via Make.com)
-    const webhookUrl = 'https://hook.us2.make.com/u22jvkbbispk8mr2efjteedpm14gi9n7';
+    // Send data to webhook (Google Sheets via Google Apps Script)
+    console.log('=== WEBHOOK DEBUG START ===');
+    console.log('Webhook URL:', WEBHOOK_URL);
     
     try {
       const webhookPayload = {
         nama: customerName,
         alamat: deliveryAddress,
         telepon: customerPhone,
-        pesanan: pesananText,
-        tanggal: tanggal,
-        jam: jam,
-        total: totalAmount,
-        order_id: order.id,
-        catatan: notes || ''
+        pesanan: pesananText
       };
 
-      console.log('=== WEBHOOK DEBUG START ===');
-      console.log('Webhook URL:', webhookUrl);
       console.log('Webhook payload:', JSON.stringify(webhookPayload, null, 2));
 
-      const webhookResponse = await fetch(webhookUrl, {
+      const webhookResponse = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
         body: JSON.stringify(webhookPayload),
+        redirect: 'follow', // Important for Google Apps Script redirects
       });
 
       const responseStatus = webhookResponse.status;
@@ -313,17 +314,17 @@ Deno.serve(async (req) => {
         console.error('Webhook failed! Status:', responseStatus);
         console.error('Response details:', responseBody);
       } else {
-        console.log('Webhook sent successfully!');
+        console.log('Webhook sent successfully to Google Apps Script!');
       }
-      console.log('=== WEBHOOK DEBUG END ===');
-
+      
     } catch (webhookError) {
       console.error('=== WEBHOOK ERROR ===');
       console.error('Error type:', webhookError instanceof Error ? webhookError.name : 'Unknown');
       console.error('Error message:', webhookError instanceof Error ? webhookError.message : String(webhookError));
       console.error('Full error:', webhookError);
-      console.error('=== WEBHOOK ERROR END ===');
     }
+    
+    console.log('=== WEBHOOK DEBUG END ===');
 
     return new Response(
       JSON.stringify({ 
