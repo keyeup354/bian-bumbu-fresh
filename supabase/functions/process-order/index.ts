@@ -19,6 +19,7 @@ interface OrderData {
   deliveryAddress: string;
   items: OrderItem[];
   notes?: string;
+  paymentMethod?: string;
 }
 
 // Sanitize string inputs to prevent XSS and injection attacks
@@ -255,32 +256,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Format order items for webhook
-    const pesananText = validatedItems
-      .map(item => `${item.name} x${item.quantity} (${item.unit || 'pcs'})`)
-      .join(', ');
+    // Format helper for currency
+    const formatRupiah = (amount: number) => {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(amount);
+    };
 
-    // Get current date and time in Indonesia timezone
+    // Format order items for webhook with product details and total
+    const pesananLines = validatedItems.map(item => {
+      const subtotal = item.price * item.quantity;
+      return `${item.name} x${item.quantity} (${item.unit || 'pcs'}) @ ${formatRupiah(item.price)} = ${formatRupiah(subtotal)}`;
+    });
+    // Add total at the bottom
+    pesananLines.push(`---`);
+    pesananLines.push(`TOTAL: ${formatRupiah(totalAmount)}`);
+    const pesananText = pesananLines.join('\n');
+
+    // Get current date and time in Indonesia timezone (DD-MM-YYYY HH:mm format)
     const now = new Date();
     const indonesiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-    const tanggal = indonesiaTime.toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-    const jam = indonesiaTime.toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
+    const day = String(indonesiaTime.getDate()).padStart(2, '0');
+    const month = String(indonesiaTime.getMonth() + 1).padStart(2, '0');
+    const year = indonesiaTime.getFullYear();
+    const hours = String(indonesiaTime.getHours()).padStart(2, '0');
+    const minutes = String(indonesiaTime.getMinutes()).padStart(2, '0');
+    const waktu = `${day}-${month}-${year} ${hours}:${minutes}`;
+
+    // Get payment method from request (default to 'COD' if not provided)
+    const paymentMethod = body.paymentMethod ? sanitizeString(body.paymentMethod, 50) : 'COD';
 
     // Send data to webhook (Google Sheets via Google Apps Script)
     try {
       const webhookPayload = {
         nama: customerName,
+        pesanan: pesananText,
         alamat: deliveryAddress,
         telepon: customerPhone,
-        pesanan: pesananText
+        waktu: waktu,
+        metode_pembayaran: paymentMethod
       };
 
       console.log('=== WEBHOOK DEBUG START ===');
