@@ -94,8 +94,8 @@ async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
   return !data || data.length < RATE_LIMIT_MAX_ORDERS;
 }
 
-// Webhook URL for Google Sheets integration via Google Apps Script
-const WEBHOOK_URL = 'https://n8n.arry.my.id/webhook/pesanan-sayur';
+// Webhook URL for n8n integration
+const WEBHOOK_URL = 'https://n8n.arry.my.id/webhook-test/pesanan-sayur';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -289,56 +289,42 @@ Deno.serve(async (req) => {
     // Get payment method from request (default to 'COD' if not provided)
     const paymentMethod = body.paymentMethod ? sanitizeString(body.paymentMethod, 50) : 'COD';
 
-    // Send data to webhook (Google Sheets via Google Apps Script)
+    // Send data to n8n webhook
+    const webhookPayload = {
+      nama: customerName,
+      pesanan: pesananText,
+      alamat: deliveryAddress,
+      telepon: customerPhone,
+      waktu: waktu,
+      metode_pembayaran: paymentMethod
+    };
+
+    console.log('=== N8N WEBHOOK DEBUG ===');
+    console.log('URL:', WEBHOOK_URL);
+    console.log('Payload:', JSON.stringify(webhookPayload, null, 2));
+
     try {
-      const webhookPayload = {
-        nama: customerName,
-        pesanan: pesananText,
-        alamat: deliveryAddress,
-        telepon: customerPhone,
-        waktu: waktu,
-        metode_pembayaran: paymentMethod
-      };
-
-      console.log('=== WEBHOOK DEBUG START ===');
-      console.log('Webhook URL:', WEBHOOK_URL);
-      console.log('Webhook payload:', JSON.stringify(webhookPayload, null, 2));
-
       const webhookResponse = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify(webhookPayload),
       });
 
-      const responseStatus = webhookResponse.status;
-      const responseStatusText = webhookResponse.statusText;
-      let responseBody = '';
-      
-      try {
-        responseBody = await webhookResponse.text();
-      } catch (readError) {
-        responseBody = 'Could not read response body';
-      }
-
-      console.log('Webhook response status:', responseStatus, responseStatusText);
-      console.log('Webhook response body:', responseBody);
+      const responseBody = await webhookResponse.text();
+      console.log('n8n response status:', webhookResponse.status, webhookResponse.statusText);
+      console.log('n8n response body:', responseBody);
 
       if (!webhookResponse.ok) {
-        console.error('Webhook failed! Status:', responseStatus);
-        console.error('Response details:', responseBody);
+        console.error('n8n webhook failed:', webhookResponse.status, responseBody);
       } else {
-        console.log('Webhook sent successfully to Google Apps Script!');
+        console.log('n8n webhook sent successfully!');
       }
-      console.log('=== WEBHOOK DEBUG END ===');
-
     } catch (webhookError) {
-      console.error('=== WEBHOOK ERROR ===');
-      console.error('Error type:', webhookError instanceof Error ? webhookError.name : 'Unknown');
-      console.error('Error message:', webhookError instanceof Error ? webhookError.message : String(webhookError));
-      console.error('Full error:', webhookError);
-      console.error('=== WEBHOOK ERROR END ===');
+      console.error('n8n webhook error:', webhookError instanceof Error ? webhookError.message : String(webhookError));
+      // Don't fail the order if webhook fails - order is already saved in DB
     }
 
     return new Response(
