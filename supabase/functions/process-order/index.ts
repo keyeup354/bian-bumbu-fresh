@@ -94,8 +94,8 @@ async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
   return !data || data.length < RATE_LIMIT_MAX_ORDERS;
 }
 
-// Webhook URL for n8n integration
-const WEBHOOK_URL = 'https://n8n.arry.my.id/webhook-test/pesanan-sayur';
+// Webhook URL for Google Apps Script (Google Sheets integration)
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwDDzayKpGZUxIwqU4G0Wz4_XHFa18cEDXITu1yZKOEVoZC78sIYO04KGgX5EykgTeE/exec';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
       metode_pembayaran: paymentMethod
     };
 
-    console.log('=== N8N WEBHOOK DEBUG ===');
+    console.log('=== GOOGLE SHEETS WEBHOOK DEBUG ===');
     console.log('URL:', WEBHOOK_URL);
     console.log('Payload:', JSON.stringify(webhookPayload, null, 2));
 
@@ -308,23 +308,22 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'SupabaseEdgeFunction/1.0',
         },
         body: JSON.stringify(webhookPayload),
+        redirect: 'follow',
       });
 
       const responseBody = await webhookResponse.text();
-      console.log('n8n response status:', webhookResponse.status, webhookResponse.statusText);
-      console.log('n8n response body:', responseBody);
+      console.log('Google Sheets response status:', webhookResponse.status, webhookResponse.statusText);
+      console.log('Google Sheets response body:', responseBody);
 
       if (!webhookResponse.ok) {
-        console.error('n8n webhook failed:', webhookResponse.status, responseBody);
+        console.error('Google Sheets webhook failed:', webhookResponse.status, responseBody);
       } else {
-        console.log('n8n webhook sent successfully!');
+        console.log('Google Sheets webhook sent successfully!');
       }
     } catch (webhookError) {
-      console.error('n8n webhook error:', webhookError instanceof Error ? webhookError.message : String(webhookError));
+      console.error('Google Sheets webhook error:', webhookError instanceof Error ? webhookError.message : String(webhookError));
       // Don't fail the order if webhook fails - order is already saved in DB
     }
 
