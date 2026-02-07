@@ -309,6 +309,7 @@ Deno.serve(async (req) => {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'User-Agent': 'SupabaseEdgeFunction/1.0',
         },
         body: JSON.stringify(webhookPayload),
       });
