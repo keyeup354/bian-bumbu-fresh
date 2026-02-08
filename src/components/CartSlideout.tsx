@@ -3,15 +3,19 @@ import { X, Minus, Plus, Trash2, ShoppingBag, Send, Loader2 } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+
+type PaymentMethod = 'COD' | 'E-Wallet' | 'TF';
 
 const CartSlideout = () => {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
 
   // Get saved address from localStorage
   const savedAddress = localStorage.getItem('userAddress') || '';
@@ -64,6 +68,7 @@ const CartSlideout = () => {
           customerName: trimmedName,
           customerPhone: trimmedPhone,
           deliveryAddress: savedAddress,
+          paymentMethod: paymentMethod,
           items: items.map(item => ({
             id: item.id,
             name: item.name,
@@ -89,6 +94,7 @@ const CartSlideout = () => {
       clearCart();
       setCustomerName('');
       setCustomerPhone('');
+      setPaymentMethod('COD');
       setIsCartOpen(false);
     } catch (error) {
       console.error('Error submitting order:', error);
@@ -215,6 +221,38 @@ const CartSlideout = () => {
                   <span className="font-medium">Alamat:</span> {savedAddress}
                 </div>
               )}
+
+              {/* Payment Method Selection */}
+              <div className="space-y-2">
+                <Label>Metode Pembayaran</Label>
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(val) => setPaymentMethod(val as PaymentMethod)}
+                  className="flex flex-col gap-2"
+                >
+                  <label className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card cursor-pointer hover:bg-muted transition-colors">
+                    <RadioGroupItem value="COD" id="cod" />
+                    <div>
+                      <span className="font-medium text-foreground">Cash on Delivery</span>
+                      <p className="text-xs text-muted-foreground">Bayar saat barang diterima</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card cursor-pointer hover:bg-muted transition-colors">
+                    <RadioGroupItem value="E-Wallet" id="ewallet" />
+                    <div>
+                      <span className="font-medium text-foreground">E-Wallet</span>
+                      <p className="text-xs text-muted-foreground">GoPay, OVO, DANA, dll</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card cursor-pointer hover:bg-muted transition-colors">
+                    <RadioGroupItem value="TF" id="transfer" />
+                    <div>
+                      <span className="font-medium text-foreground">Transfer Bank</span>
+                      <p className="text-xs text-muted-foreground">BCA, BRI, Mandiri, dll</p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
             </div>
 
             {/* Summary */}
