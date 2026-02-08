@@ -95,7 +95,7 @@ async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
 }
 
 // Webhook URL for Google Apps Script (Google Sheets integration)
-const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwDDzayKpGZUxIwqU4G0Wz4_XHFa18cEDXITu1yZKOEVoZC78sIYO04KGgX5EykgTeE/exec';
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzP979zteClsiHOh9K8RIXjhOk4Lq9A2zgdIxikTbWlm3hQhHFyMAnYnXavQBdhiNwq/exec';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
