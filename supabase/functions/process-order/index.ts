@@ -291,12 +291,22 @@ Deno.serve(async (req) => {
 
     // Send data to n8n webhook
     const webhookPayload = {
-      nama: customerName,
-      pesanan: pesananText,
-      alamat: deliveryAddress,
-      telepon: customerPhone,
-      waktu: waktu,
-      metode_pembayaran: paymentMethod
+      customer_info: {
+        name: customerName,
+        phone: customerPhone,
+        address: deliveryAddress,
+      },
+      items: validatedItems.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit || 'pcs',
+        price: item.price,
+        subtotal: item.price * item.quantity,
+      })),
+      total_amount: totalAmount,
+      payment_method: paymentMethod,
+      order_time: waktu,
+      notes: notes || '',
     };
 
     console.log('=== GOOGLE SHEETS WEBHOOK DEBUG ===');
