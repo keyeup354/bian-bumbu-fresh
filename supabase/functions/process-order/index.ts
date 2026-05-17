@@ -289,7 +289,15 @@ Deno.serve(async (req) => {
     // Get payment method from request (default to 'COD' if not provided)
     const paymentMethod = body.paymentMethod ? sanitizeString(body.paymentMethod, 50) : 'COD';
 
-    // Send data to n8n webhook
+    // Build formatted order summary text
+    const orderSummaryLines = validatedItems.map(item => {
+      const subtotal = item.price * item.quantity;
+      return `• ${item.name} (${item.quantity} ${item.unit || 'pcs'}) = Rp ${subtotal.toLocaleString('id-ID')}`;
+    });
+    orderSummaryLines.push(`\nTotal Belanja: Rp ${totalAmount.toLocaleString('id-ID')}`);
+    const orderSummary = orderSummaryLines.join('\n');
+
+    // Send data to webhook
     const webhookPayload = {
       customer_info: {
         name: customerName,
@@ -307,6 +315,7 @@ Deno.serve(async (req) => {
       payment_method: paymentMethod,
       order_time: waktu,
       notes: notes || '',
+      order_summary: orderSummary,
     };
 
     console.log('=== GOOGLE SHEETS WEBHOOK DEBUG ===');
