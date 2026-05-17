@@ -94,8 +94,8 @@ async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
   return !data || data.length < RATE_LIMIT_MAX_ORDERS;
 }
 
-// Webhook URL for Google Apps Script (Google Sheets integration)
-const WEBHOOK_URL = 'https://www.sim.ai/api/webhooks/trigger/d92c0e39-f783-418a-85cb-0139f58912e7';
+// Webhook URL for Make.com custom webhook
+const WEBHOOK_URL = 'https://hook.us2.make.com/u22jvkbbispk8mr2efjteedpm14gi9n7';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
