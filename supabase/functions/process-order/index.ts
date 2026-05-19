@@ -94,8 +94,8 @@ async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
   return !data || data.length < RATE_LIMIT_MAX_ORDERS;
 }
 
-// Webhook URL for Make.com custom webhook
-const WEBHOOK_URL = 'https://hook.us2.make.com/u22jvkbbispk8mr2efjteedpm14gi9n7';
+// Webhook URL for n8n webhook
+const WEBHOOK_URL = 'https://n8n.arry.my.id/webhook-test/Bian-bumbus';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
