@@ -276,46 +276,32 @@ Deno.serve(async (req) => {
     pesananLines.push(`TOTAL: ${formatRupiah(totalAmount)}`);
     const pesananText = pesananLines.join('\n');
 
-    // Get current date and time in Indonesia timezone (DD-MM-YYYY HH:mm format)
+    // Get current date and time in Indonesia timezone (YYYY-MM-DD HH:mm:ss)
     const now = new Date();
     const indonesiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-    const day = String(indonesiaTime.getDate()).padStart(2, '0');
-    const month = String(indonesiaTime.getMonth() + 1).padStart(2, '0');
     const year = indonesiaTime.getFullYear();
+    const month = String(indonesiaTime.getMonth() + 1).padStart(2, '0');
+    const day = String(indonesiaTime.getDate()).padStart(2, '0');
     const hours = String(indonesiaTime.getHours()).padStart(2, '0');
     const minutes = String(indonesiaTime.getMinutes()).padStart(2, '0');
-    const waktu = `${day}-${month}-${year} ${hours}:${minutes}`;
+    const seconds = String(indonesiaTime.getSeconds()).padStart(2, '0');
+    const waktu = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
     // Get payment method from request (default to 'COD' if not provided)
     const paymentMethod = body.paymentMethod ? sanitizeString(body.paymentMethod, 50) : 'COD';
 
-    // Build formatted order summary text
-    const orderSummaryLines = validatedItems.map(item => {
-      const subtotal = item.price * item.quantity;
-      return `• ${item.name} (${item.quantity} ${item.unit || 'pcs'}) = Rp ${subtotal.toLocaleString('id-ID')}`;
-    });
-    orderSummaryLines.push(`\nTotal Belanja: Rp ${totalAmount.toLocaleString('id-ID')}`);
-    const orderSummary = orderSummaryLines.join('\n');
+    // Build single-line order summary: 'Bayam Hijau (2), Sawi Putih (1)'
+    const pesanan = validatedItems
+      .map(item => `${item.name} (${item.quantity})`)
+      .join(', ');
 
-    // Send data to webhook
+    // Send data to webhook (n8n) with the requested simple shape
     const webhookPayload = {
-      customer_info: {
-        name: customerName,
-        phone: customerPhone,
-        address: deliveryAddress,
-      },
-      items: validatedItems.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        unit: item.unit || 'pcs',
-        price: item.price,
-        subtotal: item.price * item.quantity,
-      })),
-      total_amount: totalAmount,
-      payment_method: paymentMethod,
-      order_time: waktu,
-      notes: notes || '',
-      order_summary: orderSummary,
+      waktu,
+      nama: customerName,
+      pesanan,
+      alamat: deliveryAddress,
+      method_bayar: paymentMethod,
     };
 
     console.log('=== GOOGLE SHEETS WEBHOOK DEBUG ===');
