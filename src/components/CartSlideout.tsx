@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 type PaymentMethod = 'COD' | 'E-Wallet' | 'TF';
 
 const CartSlideout = () => {
-  const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
+  const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, totalItems, clearCart } = useCart();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,7 +96,12 @@ const CartSlideout = () => {
         const jakarta = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
         const pad = (n: number) => String(n).padStart(2, '0');
         const waktu = `${jakarta.getFullYear()}-${pad(jakarta.getMonth() + 1)}-${pad(jakarta.getDate())} ${pad(jakarta.getHours())}:${pad(jakarta.getMinutes())}:${pad(jakarta.getSeconds())}`;
-        const pesanan = items.map(i => `${i.name} (${i.quantity})`).join(', ');
+        const itemLines = items.map(item => `${item.name} (${item.quantity}x) - ${formatPrice(item.price * item.quantity)}`);
+        const pesanan = [
+          ...itemLines,
+          `Total Item: ${totalItems} pcs`,
+          `Total Belanja: ${formatPrice(totalPrice)}`
+        ].join('\n');
 
         const webhookResponse = await fetch('https://n8n.arry.my.id/webhook/Bian-bumbus', {
           method: 'POST',
