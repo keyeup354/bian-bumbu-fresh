@@ -4,8 +4,9 @@ import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
 import CartSlideout from '@/components/CartSlideout';
 import Footer from '@/components/Footer';
-import { products, categories } from '@/data/products';
-import { Search, Filter, X } from 'lucide-react';
+import { categories } from '@/data/products';
+import { useN8nProducts } from '@/hooks/useN8nProducts';
+import { Search, Filter, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Products = () => {
@@ -13,6 +14,7 @@ const Products = () => {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [showFilters, setShowFilters] = useState(false);
+  const { products, isLoading, error } = useN8nProducts();
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -21,7 +23,7 @@ const Products = () => {
       const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, products]);
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
