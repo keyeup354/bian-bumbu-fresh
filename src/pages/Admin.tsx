@@ -91,6 +91,32 @@ const Admin = () => {
       }
       
       setProducts([data, ...products]);
+
+      // Kirim juga ke n8n webhook add-produk
+      try {
+        const res = await fetch('https://n8n.arry.my.id/webhook/add-produk', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            id: data.id,
+            nama_produk: data.name,
+            harga: data.price,
+            foto_url: data.image_url,
+            deskripsi: data.description,
+          }),
+        });
+        console.log('n8n add-produk response:', res.status);
+        if (!res.ok) {
+          toast.warning('Produk tersimpan, tapi gagal sinkron ke n8n.');
+        }
+      } catch (webhookErr) {
+        console.error('n8n add-produk error:', webhookErr);
+        toast.warning('Produk tersimpan, tapi gagal sinkron ke n8n.');
+      }
+
       toast.success('Produk berhasil ditambahkan');
       setIsAdding(false);
     } else if (isEditing) {

@@ -7,12 +7,16 @@ import Footer from '@/components/Footer';
 import FlashSaleBanner from '@/components/FlashSaleBanner';
 import PromoBanner from '@/components/PromoBanner';
 import DeliverySection from '@/components/DeliverySection';
-import { categories, featuredProducts, flashSaleProducts } from '@/data/products';
+import { categories } from '@/data/products';
+import { useN8nProducts } from '@/hooks/useN8nProducts';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Zap } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
+  const { products, isLoading, error } = useN8nProducts();
+  const featuredProducts = products.slice(0, 8);
+
   return (
     <div className="min-h-screen bg-background">
       <FlashSaleBanner />
@@ -22,27 +26,6 @@ const Index = () => {
       <main>
         <Hero />
         <PromoBanner />
-
-        {/* Flash Sale Section */}
-        {flashSaleProducts.length > 0 && (
-          <section className="py-12 md:py-16 bg-gradient-to-r from-terracotta/5 to-terracotta/10">
-            <div className="container mx-auto px-4">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="bg-terracotta rounded-full p-2 animate-pulse">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">
-                  Flash Sale ⚡
-                </h2>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {flashSaleProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* Categories Section */}
         <section className="py-16 md:py-20">
@@ -83,11 +66,23 @@ const Index = () => {
                 </Button>
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16 text-muted-foreground">
+                <Loader2 className="w-6 h-6 animate-spin mr-2" /> Memuat produk...
+              </div>
+            ) : error ? (
+              <div className="text-center text-muted-foreground py-16">
+                Gagal memuat produk dari server.
+              </div>
+            ) : featuredProducts.length === 0 ? (
+              <div className="text-center text-muted-foreground py-16">Belum ada produk.</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {featuredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
