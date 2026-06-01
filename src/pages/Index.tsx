@@ -64,23 +64,11 @@ const Index = () => {
                 </Button>
               </Link>
             </div>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-16 text-muted-foreground">
-                <Loader2 className="w-6 h-6 animate-spin mr-2" /> Memuat produk...
-              </div>
-            ) : error ? (
-              <div className="text-center text-muted-foreground py-16">
-                Gagal memuat produk dari server.
-              </div>
-            ) : featuredProducts.length === 0 ? (
-              <div className="text-center text-muted-foreground py-16">Belum ada produk.</div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {featuredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
         </section>
 
