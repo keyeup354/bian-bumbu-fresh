@@ -7,12 +7,18 @@ import Footer from '@/components/Footer';
 import FlashSaleBanner from '@/components/FlashSaleBanner';
 import PromoBanner from '@/components/PromoBanner';
 import DeliverySection from '@/components/DeliverySection';
-import { categories, featuredProducts } from '@/data/products';
+import { categories } from '@/data/products';
+import { useProducts } from '@/contexts/ProductsContext';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
+  const { products } = useProducts();
+  const featuredProducts = products.filter((p) => p.isFlashSale).concat(
+    products.filter((p) => !p.isFlashSale)
+  ).slice(0, 8);
+
 
 
   return (

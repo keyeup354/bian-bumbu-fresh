@@ -4,11 +4,13 @@ import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
 import CartSlideout from '@/components/CartSlideout';
 import Footer from '@/components/Footer';
-import { categories, products } from '@/data/products';
+import { categories } from '@/data/products';
+import { useProducts } from '@/contexts/ProductsContext';
 import { Search, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Products = () => {
+  const { products } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
