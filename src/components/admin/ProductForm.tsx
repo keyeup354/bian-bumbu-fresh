@@ -1,4 +1,5 @@
-import { Save, X } from 'lucide-react';
+import { useRef } from 'react';
+import { Save, X, Upload, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { categories } from '@/data/products';
-import MediaUploader from './MediaUploader';
+import { toast } from 'sonner';
 
 interface Product {
   id: string;
@@ -19,6 +20,7 @@ interface Product {
   is_flash_sale: boolean | null;
   flash_sale_price: number | null;
   stock: number;
+  in_stock: boolean;
   media_urls: string[] | null;
   health_benefits: string | null;
   cooking_tips: string | null;
@@ -32,7 +34,71 @@ interface ProductFormProps {
   isAdding: boolean;
 }
 
+const fileToDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
 const ProductForm = ({ editForm, setEditForm, onSave, onCancel, isAdding }: ProductFormProps) => {
+  const mainImageInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMainImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran gambar maksimal 5MB');
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setEditForm({ ...editForm, image_url: dataUrl });
+    } catch {
+      toast.error('Gagal membaca file');
+    } finally {
+      if (mainImageInputRef.current) mainImageInputRef.current.value = '';
+    }
+  };
+
+  const handleMediaFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const newUrls: string[] = [];
+    for (const file of Array.from(files)) {
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      if (!isImage && !isVideo) {
+        toast.error(`File ${file.name} tidak didukung`);
+        continue;
+      }
+      const limit = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
+      if (file.size > limit) {
+        toast.error(`File ${file.name} terlalu besar`);
+        continue;
+      }
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        newUrls.push(dataUrl);
+      } catch {
+        toast.error(`Gagal membaca ${file.name}`);
+      }
+    }
+    if (newUrls.length > 0) {
+      setEditForm({ ...editForm, media_urls: [...(editForm.media_urls || []), ...newUrls] });
+      toast.success(`${newUrls.length} media ditambahkan`);
+    }
+    if (mediaInputRef.current) mediaInputRef.current.value = '';
+  };
+
+  const removeMedia = (url: string) => {
+    setEditForm({ ...editForm, media_urls: (editForm.media_urls || []).filter((u) => u !== url) });
+  };
+
+  const isVideo = (url: string) => /^data:video\//i.test(url) || /\.(mp4|webm|mov|avi|mkv)$/i.test(url);
+
   return (
     <div className="p-6 bg-muted/50 border-b border-border space-y-6">
       <h3 className="font-display text-lg font-semibold">
@@ -92,12 +158,38 @@ const ProductForm = ({ editForm, setEditForm, onSave, onCancel, isAdding }: Prod
           />
         </div>
         <div className="space-y-2">
-          <Label>URL Gambar Utama</Label>
+          <Label>Gambar Utama</Label>
+          <div className="flex gap-2 items-center">
+            {editForm.image_url ? (
+              <img src={editForm.image_url} alt="preview" className="w-10 h-10 rounded object-cover border border-border" />
+            ) : null}
+            <input
+              ref={mainImageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleMainImageFile}
+              className="block w-full text-sm text-foreground file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer"
+            />
+          </div>
           <Input
             value={editForm.image_url || ''}
             onChange={(e) => setEditForm({ ...editForm, image_url: e.target.value })}
-            placeholder="URL gambar produk"
+            placeholder="Atau tempel URL gambar"
           />
+        </div>
+      </div>
+
+      {/* In-stock toggle */}
+      <div className="bg-card rounded-lg p-4 border border-border flex items-center gap-3">
+        <Switch
+          checked={editForm.in_stock !== false}
+          onCheckedChange={(checked) => setEditForm({ ...editForm, in_stock: checked })}
+        />
+        <div>
+          <Label className="text-base font-medium">
+            {editForm.in_stock !== false ? 'In Stock' : 'Barang Habis'}
+          </Label>
+          <p className="text-xs text-muted-foreground">Atur ketersediaan produk untuk pembeli</p>
         </div>
       </div>
 
@@ -135,47 +227,59 @@ const ProductForm = ({ editForm, setEditForm, onSave, onCancel, isAdding }: Prod
         )}
       </div>
 
-      {/* Media Upload */}
-      {editForm.id && (
-        <div className="space-y-2">
-          <Label className="text-base font-medium">Media Produk (Foto & Video)</Label>
-          <p className="text-sm text-muted-foreground mb-2">
-            Upload foto dan video produk. Media ini akan ditampilkan di halaman detail produk.
-          </p>
-          <MediaUploader
-            productId={editForm.id}
-            mediaUrls={editForm.media_urls || []}
-            onMediaChange={(urls) => setEditForm({ ...editForm, media_urls: urls })}
+      {/* Media Upload (base64, local state) */}
+      <div className="space-y-2">
+        <Label className="text-base font-medium">Foto / Video Tambahan</Label>
+        <p className="text-sm text-muted-foreground">
+          Disimpan sementara di perangkat (base64 / local URL).
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            ref={mediaInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            onChange={handleMediaFiles}
+            className="hidden"
+            id="product-media-input"
           />
+          <Button type="button" variant="outline" onClick={() => mediaInputRef.current?.click()}>
+            <Upload className="w-4 h-4 mr-2" />
+            Pilih File
+          </Button>
+          <span className="text-xs text-muted-foreground">Gambar ≤5MB, Video ≤20MB</span>
         </div>
-      )}
+        {editForm.media_urls && editForm.media_urls.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-3">
+            {editForm.media_urls.map((url, i) => (
+              <div key={i} className="relative aspect-square rounded-md overflow-hidden border border-border bg-muted">
+                {isVideo(url) ? (
+                  <video src={url} className="w-full h-full object-cover" />
+                ) : (
+                  <img src={url} alt={`media-${i}`} className="w-full h-full object-cover" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeMedia(url)}
+                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-90 hover:opacity-100"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Educational Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label className="text-base font-medium">Manfaat Kesehatan</Label>
-          <Textarea
-            value={editForm.health_benefits || ''}
-            onChange={(e) => setEditForm({ ...editForm, health_benefits: e.target.value })}
-            placeholder="Jelaskan manfaat kesehatan dari produk ini. Pisahkan poin dengan baris baru."
-            rows={5}
-          />
-          <p className="text-xs text-muted-foreground">
-            Contoh: Kaya vitamin C, Baik untuk pencernaan, Meningkatkan imunitas
-          </p>
-        </div>
-        <div className="space-y-2">
-          <Label className="text-base font-medium">Tips Memasak</Label>
-          <Textarea
-            value={editForm.cooking_tips || ''}
-            onChange={(e) => setEditForm({ ...editForm, cooking_tips: e.target.value })}
-            placeholder="Berikan tips memasak atau penggunaan produk ini."
-            rows={5}
-          />
-          <p className="text-xs text-muted-foreground">
-            Contoh: Tumis dengan bawang putih, Cocok untuk sup, Simpan di kulkas
-          </p>
-        </div>
+      <div className="space-y-2">
+        <Label className="text-base font-medium">Manfaat Kesehatan</Label>
+        <Textarea
+          value={editForm.health_benefits || ''}
+          onChange={(e) => setEditForm({ ...editForm, health_benefits: e.target.value })}
+          placeholder="Jelaskan manfaat kesehatan dari produk ini."
+          rows={4}
+        />
       </div>
 
       {/* Actions */}

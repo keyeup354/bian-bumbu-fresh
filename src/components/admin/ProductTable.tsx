@@ -1,6 +1,7 @@
 import { Edit2, Trash2, Image as ImageIcon, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -21,6 +22,7 @@ interface Product {
   is_flash_sale: boolean | null;
   flash_sale_price: number | null;
   stock: number;
+  in_stock: boolean;
   media_urls: string[] | null;
   health_benefits: string | null;
   cooking_tips: string | null;
@@ -30,10 +32,11 @@ interface ProductTableProps {
   products: Product[];
   onEdit: (product: Product) => void;
   onDelete: (id: string) => void;
+  onToggleStock: (id: string, inStock: boolean) => void;
   isEditing: boolean;
 }
 
-const ProductTable = ({ products, onEdit, onDelete, isEditing }: ProductTableProps) => {
+const ProductTable = ({ products, onEdit, onDelete, onToggleStock, isEditing }: ProductTableProps) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -44,8 +47,8 @@ const ProductTable = ({ products, onEdit, onDelete, isEditing }: ProductTablePro
 
   const getMediaCount = (urls: string[] | null) => {
     if (!urls) return { images: 0, videos: 0 };
-    const images = urls.filter(url => !url.match(/\.(mp4|webm|mov|avi|mkv)$/i)).length;
-    const videos = urls.filter(url => url.match(/\.(mp4|webm|mov|avi|mkv)$/i)).length;
+    const videos = urls.filter((url) => /^data:video\//i.test(url) || url.match(/\.(mp4|webm|mov|avi|mkv)$/i)).length;
+    const images = urls.length - videos;
     return { images, videos };
   };
 
@@ -60,7 +63,7 @@ const ProductTable = ({ products, onEdit, onDelete, isEditing }: ProductTablePro
             <TableHead className="text-right">Harga</TableHead>
             <TableHead className="text-center">Stok</TableHead>
             <TableHead className="text-center">Media</TableHead>
-            <TableHead className="text-center">Status</TableHead>
+            <TableHead className="text-center">Ketersediaan</TableHead>
             <TableHead className="w-24">Aksi</TableHead>
           </TableRow>
         </TableHeader>
@@ -68,7 +71,7 @@ const ProductTable = ({ products, onEdit, onDelete, isEditing }: ProductTablePro
           {products.map((product) => {
             const mediaCount = getMediaCount(product.media_urls);
             return (
-              <TableRow key={product.id}>
+              <TableRow key={product.id} className={product.in_stock === false ? 'opacity-60' : ''}>
                 <TableCell>
                   <img
                     src={product.image_url || '/placeholder.svg'}
@@ -118,11 +121,15 @@ const ProductTable = ({ products, onEdit, onDelete, isEditing }: ProductTablePro
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
-                  {product.is_flash_sale ? (
-                    <Badge className="bg-accent text-accent-foreground">Flash Sale</Badge>
-                  ) : (
-                    <Badge variant="outline">Normal</Badge>
-                  )}
+                  <div className="flex flex-col items-center gap-1">
+                    <Switch
+                      checked={product.in_stock !== false}
+                      onCheckedChange={(checked) => onToggleStock(product.id, checked)}
+                    />
+                    <span className={`text-xs ${product.in_stock === false ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                      {product.in_stock === false ? 'Barang Habis' : 'In Stock'}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
