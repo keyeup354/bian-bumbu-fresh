@@ -4,9 +4,8 @@ import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
 import CartSlideout from '@/components/CartSlideout';
 import Footer from '@/components/Footer';
-import { categories } from '@/data/products';
-import { useN8nProducts } from '@/hooks/useN8nProducts';
-import { Search, Filter, X, Loader2 } from 'lucide-react';
+import { categories, products } from '@/data/products';
+import { Search, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Products = () => {
@@ -14,7 +13,7 @@ const Products = () => {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [showFilters, setShowFilters] = useState(false);
-  const { products, isLoading, error } = useN8nProducts();
+
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -173,15 +172,7 @@ const Products = () => {
 
             {/* Products Grid */}
             <div className="flex-1">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground">
-                  <Loader2 className="w-6 h-6 animate-spin mr-2" /> Memuat produk...
-                </div>
-              ) : error ? (
-                <div className="text-center py-16 text-muted-foreground">
-                  Gagal memuat produk dari server.
-                </div>
-              ) : filteredProducts.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                     <Search className="w-10 h-10 text-muted-foreground" />

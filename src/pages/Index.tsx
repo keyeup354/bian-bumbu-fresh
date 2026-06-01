@@ -7,15 +7,13 @@ import Footer from '@/components/Footer';
 import FlashSaleBanner from '@/components/FlashSaleBanner';
 import PromoBanner from '@/components/PromoBanner';
 import DeliverySection from '@/components/DeliverySection';
-import { categories } from '@/data/products';
-import { useN8nProducts } from '@/hooks/useN8nProducts';
+import { categories, featuredProducts } from '@/data/products';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
-  const { products, isLoading, error } = useN8nProducts();
-  const featuredProducts = products.slice(0, 8);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,23 +64,11 @@ const Index = () => {
                 </Button>
               </Link>
             </div>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-16 text-muted-foreground">
-                <Loader2 className="w-6 h-6 animate-spin mr-2" /> Memuat produk...
-              </div>
-            ) : error ? (
-              <div className="text-center text-muted-foreground py-16">
-                Gagal memuat produk dari server.
-              </div>
-            ) : featuredProducts.length === 0 ? (
-              <div className="text-center text-muted-foreground py-16">Belum ada produk.</div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {featuredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
         </section>
 
