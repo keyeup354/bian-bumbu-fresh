@@ -8,16 +8,17 @@ import ProductGallery from '@/components/ProductGallery';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
-import { products, ExtendedProduct } from '@/data/products';
+import { useProducts } from '@/contexts/ProductsContext';
 import ProductCard from '@/components/ProductCard';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart, setIsCartOpen } = useCart();
+  const { products } = useProducts();
   const [quantity, setQuantity] = useState(1);
 
-  const product = products.find(p => p.id === id) as ExtendedProduct | undefined;
+  const product = products.find(p => p.id === id);
 
   if (!product) {
     return (
