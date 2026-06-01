@@ -172,15 +172,7 @@ const Products = () => {
 
             {/* Products Grid */}
             <div className="flex-1">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-16 text-muted-foreground">
-                  <Loader2 className="w-6 h-6 animate-spin mr-2" /> Memuat produk...
-                </div>
-              ) : error ? (
-                <div className="text-center py-16 text-muted-foreground">
-                  Gagal memuat produk dari server.
-                </div>
-              ) : filteredProducts.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                     <Search className="w-10 h-10 text-muted-foreground" />
