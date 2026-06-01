@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,10 +9,10 @@ import AdminStats from '@/components/admin/AdminStats';
 import ProductForm from '@/components/admin/ProductForm';
 import ProductTable from '@/components/admin/ProductTable';
 import OrdersPanel from '@/components/admin/OrdersPanel';
-import { supabase } from '@/integrations/supabase/client';
+import { useProducts, AdminProduct } from '@/contexts/ProductsContext';
 import { toast } from 'sonner';
 
-interface Product {
+export interface AdminFormProduct {
   id: string;
   name: string;
   price: number;
@@ -23,122 +23,78 @@ interface Product {
   is_flash_sale: boolean | null;
   flash_sale_price: number | null;
   stock: number;
+  in_stock: boolean;
   media_urls: string[] | null;
   health_benefits: string | null;
   cooking_tips: string | null;
 }
 
+const toForm = (p: AdminProduct): AdminFormProduct => ({
+  id: p.id,
+  name: p.name,
+  price: p.price,
+  unit: p.unit,
+  image_url: p.image || null,
+  category: p.category,
+  description: p.description || null,
+  is_flash_sale: p.isFlashSale || false,
+  flash_sale_price: p.flashSalePrice ?? null,
+  stock: p.stock ?? 0,
+  in_stock: p.inStock !== false,
+  media_urls: p.gallery || null,
+  health_benefits: p.healthBenefits || null,
+  cooking_tips: null,
+});
+
+const fromForm = (f: Partial<AdminFormProduct>, fallbackId?: string): AdminProduct => ({
+  id: f.id || fallbackId || `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  name: f.name || '',
+  price: Number(f.price) || 0,
+  unit: f.unit || 'per pack',
+  image: f.image_url || '',
+  category: f.category || 'vegetables',
+  description: f.description || '',
+  isFlashSale: f.is_flash_sale || false,
+  flashSalePrice: f.flash_sale_price ?? undefined,
+  stock: Number(f.stock) || 0,
+  inStock: f.in_stock !== false,
+  gallery: f.media_urls || [],
+  healthBenefits: f.health_benefits || '',
+});
+
 const Admin = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
+  const { products, addProduct, updateProduct, deleteProduct, setInStock } = useProducts();
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<Product>>({});
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [editForm, setEditForm] = useState<Partial<AdminFormProduct>>({});
   const [ordersCount, setOrdersCount] = useState(0);
 
-  // Fetch products from database
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching products:', error);
-        toast.error('Gagal memuat produk');
-      } else {
-        setProducts(data || []);
-      }
-      setIsLoadingProducts(false);
-    };
-
-    if (isAdmin) {
-      fetchProducts();
-    }
-  }, [isAdmin]);
-
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: AdminFormProduct) => {
     setIsEditing(product.id);
     setEditForm(product);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
+    if (!editForm.name) {
+      toast.error('Nama produk wajib diisi');
+      return;
+    }
     if (isAdding) {
-      const { data, error } = await supabase
-        .from('products')
-        .insert({
-          name: editForm.name || '',
-          price: editForm.price || 0,
-          unit: editForm.unit || 'per pack',
-          image_url: editForm.image_url || '',
-          category: editForm.category || 'vegetables',
-          description: editForm.description || '',
-          is_flash_sale: editForm.is_flash_sale || false,
-          flash_sale_price: editForm.flash_sale_price,
-          stock: editForm.stock || 100,
-          media_urls: editForm.media_urls || [],
-          health_benefits: editForm.health_benefits || '',
-          cooking_tips: editForm.cooking_tips || '',
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        toast.error('Gagal menambah produk: ' + error.message);
-        return;
-      }
-      
-      setProducts([data, ...products]);
+      addProduct(fromForm(editForm));
       toast.success('Produk berhasil ditambahkan');
       setIsAdding(false);
     } else if (isEditing) {
-      const { error } = await supabase
-        .from('products')
-        .update({
-          name: editForm.name,
-          price: editForm.price,
-          unit: editForm.unit,
-          image_url: editForm.image_url,
-          category: editForm.category,
-          description: editForm.description,
-          is_flash_sale: editForm.is_flash_sale,
-          flash_sale_price: editForm.flash_sale_price,
-          stock: editForm.stock,
-          media_urls: editForm.media_urls,
-          health_benefits: editForm.health_benefits,
-          cooking_tips: editForm.cooking_tips,
-        })
-        .eq('id', isEditing);
-      
-      if (error) {
-        toast.error('Gagal memperbarui produk: ' + error.message);
-        return;
-      }
-      
-      setProducts(products.map(p => 
-        p.id === isEditing ? { ...p, ...editForm } as Product : p
-      ));
+      updateProduct(isEditing, fromForm(editForm, isEditing));
       toast.success('Produk berhasil diperbarui');
       setIsEditing(null);
     }
     setEditForm({});
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        toast.error('Gagal menghapus produk: ' + error.message);
-        return;
-      }
-      
-      setProducts(products.filter(p => p.id !== id));
+      deleteProduct(id);
       toast.success('Produk berhasil dihapus');
     }
   };
@@ -152,6 +108,7 @@ const Admin = () => {
   const startAdding = () => {
     setIsAdding(true);
     setEditForm({
+      id: '',
       name: '',
       price: 0,
       unit: 'per pack',
@@ -160,6 +117,7 @@ const Admin = () => {
       description: '',
       is_flash_sale: false,
       stock: 100,
+      in_stock: true,
       media_urls: [],
       health_benefits: '',
       cooking_tips: '',
@@ -171,7 +129,6 @@ const Admin = () => {
     toast.success('Berhasil keluar');
   };
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -183,17 +140,18 @@ const Admin = () => {
     );
   }
 
-  // Show login if not authenticated or not admin
   if (!user || !isAdmin) {
     return <AdminLogin />;
   }
+
+  const formProducts = products.map(toForm);
 
   return (
     <div className="min-h-screen bg-background">
       <AdminHeader user={user} onSignOut={handleSignOut} />
 
       <main className="container mx-auto px-4 py-8">
-        <AdminStats products={products} ordersCount={ordersCount} />
+        <AdminStats products={formProducts} ordersCount={ordersCount} />
 
         <Tabs defaultValue="products" className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -216,7 +174,6 @@ const Admin = () => {
                 </Button>
               </div>
 
-              {/* Add/Edit Form */}
               {(isAdding || isEditing) && (
                 <ProductForm
                   editForm={editForm}
@@ -227,22 +184,17 @@ const Admin = () => {
                 />
               )}
 
-              {/* Product List */}
-              {isLoadingProducts ? (
-                <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                  <p className="mt-4 text-muted-foreground">Memuat produk...</p>
-                </div>
-              ) : products.length === 0 ? (
+              {formProducts.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Belum ada produk. Klik "Tambah Produk" untuk memulai.</p>
                 </div>
               ) : (
                 <ProductTable
-                  products={products}
+                  products={formProducts}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onToggleStock={(id, val) => setInStock(id, val)}
                   isEditing={isEditing !== null || isAdding}
                 />
               )}
