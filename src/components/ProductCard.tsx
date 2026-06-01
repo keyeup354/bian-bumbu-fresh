@@ -1,12 +1,13 @@
 import { Plus, Check, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCart, Product } from '@/contexts/CartContext';
+import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
-import { ExtendedProduct } from '@/data/products';
+import { AdminProduct } from '@/contexts/ProductsContext';
 import ProductDetailModal from './ProductDetailModal';
+import { toast } from 'sonner';
 
 interface ProductCardProps {
-  product: ExtendedProduct;
+  product: AdminProduct;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
@@ -22,8 +23,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
     ? Math.round((1 - product.flashSalePrice / product.price) * 100) 
     : 0;
 
+  const isOutOfStock = product.inStock === false;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isOutOfStock) {
+      toast.error('Barang Habis');
+      return;
+    }
     setIsAdding(true);
     addToCart(product);
     setTimeout(() => setIsAdding(false), 500);
@@ -44,7 +51,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <>
       <div 
-        className="group bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:shadow-card hover:border-primary/30 cursor-pointer"
+        className={`group bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:shadow-card hover:border-primary/30 cursor-pointer ${isOutOfStock ? 'opacity-70' : ''}`}
         onClick={handleCardClick}
       >
         {/* Image */}
@@ -52,17 +59,24 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${isOutOfStock ? 'grayscale' : ''}`}
           />
           
           {/* Flash Sale Badge */}
-          {product.isFlashSale && (
+          {product.isFlashSale && !isOutOfStock && (
             <div className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
               -{discount}%
             </div>
           )}
+
+          {/* Out of stock badge */}
+          {isOutOfStock && (
+            <div className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs font-bold px-3 py-1 rounded-full shadow-md">
+              Barang Habis
+            </div>
+          )}
           
-          {isInCart && (
+          {isInCart && !isOutOfStock && (
             <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded-full">
               {cartItem.quantity} di keranjang
             </div>
@@ -76,6 +90,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </div>
           </div>
         </div>
+
 
         {/* Content */}
         <div className="p-4">
@@ -99,9 +114,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
               variant="cart"
               size="sm"
               onClick={handleAddToCart}
-              className={`rounded-full transition-all ${isAdding ? 'scale-110' : ''}`}
+              disabled={isOutOfStock}
+              className={`rounded-full transition-all ${isAdding ? 'scale-110' : ''} ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isAdding ? (
+              {isOutOfStock ? (
+                <span className="text-xs">Habis</span>
+              ) : isAdding ? (
                 <Check className="w-4 h-4" />
               ) : (
                 <>
