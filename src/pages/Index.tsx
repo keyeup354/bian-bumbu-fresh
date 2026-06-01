@@ -7,15 +7,13 @@ import Footer from '@/components/Footer';
 import FlashSaleBanner from '@/components/FlashSaleBanner';
 import PromoBanner from '@/components/PromoBanner';
 import DeliverySection from '@/components/DeliverySection';
-import { categories } from '@/data/products';
-import { useN8nProducts } from '@/hooks/useN8nProducts';
+import { categories, featuredProducts } from '@/data/products';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
-  const { products, isLoading, error } = useN8nProducts();
-  const featuredProducts = products.slice(0, 8);
+
 
   return (
     <div className="min-h-screen bg-background">
