@@ -10,15 +10,23 @@ export interface Product {
   description?: string;
 }
 
+export interface CartVariant {
+  id: string;
+  unit: string;
+  price: number;
+}
+
 export interface CartItem extends Product {
   quantity: number;
+  productId: string; // underlying product id (for stock decrement)
+  variantId?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: Product, variant?: CartVariant, qty?: number) => void;
+  removeFromCart: (cartId: string) => void;
+  updateQuantity: (cartId: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -28,43 +36,54 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const makeCartId = (productId: string, variantId?: string) =>
+  variantId ? `${productId}::${variantId}` : productId;
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const addToCart = useCallback((product: Product) => {
+  const addToCart = useCallback((product: Product, variant?: CartVariant, qty: number = 1) => {
+    const cartId = makeCartId(product.id, variant?.id);
+    const price = variant ? variant.price : product.price;
+    const unit = variant ? variant.unit : product.unit;
     setItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const existing = prev.find(item => item.id === cartId);
       if (existing) {
         return prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          item.id === cartId ? { ...item, quantity: item.quantity + qty } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [
+        ...prev,
+        {
+          ...product,
+          id: cartId,
+          productId: product.id,
+          variantId: variant?.id,
+          price,
+          unit,
+          quantity: qty,
+        },
+      ];
     });
   }, []);
 
-  const removeFromCart = useCallback((productId: string) => {
-    setItems(prev => prev.filter(item => item.id !== productId));
+  const removeFromCart = useCallback((cartId: string) => {
+    setItems(prev => prev.filter(item => item.id !== cartId));
   }, []);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((cartId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      setItems(prev => prev.filter(item => item.id !== cartId));
       return;
     }
     setItems(prev =>
-      prev.map(item =>
-        item.id === productId ? { ...item, quantity } : item
-      )
+      prev.map(item => (item.id === cartId ? { ...item, quantity } : item))
     );
-  }, [removeFromCart]);
-
-  const clearCart = useCallback(() => {
-    setItems([]);
   }, []);
+
+  const clearCart = useCallback(() => setItems([]), []);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);

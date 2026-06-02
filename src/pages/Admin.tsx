@@ -12,6 +12,12 @@ import OrdersPanel from '@/components/admin/OrdersPanel';
 import { useProducts, AdminProduct } from '@/contexts/ProductsContext';
 import { toast } from 'sonner';
 
+export interface AdminFormVariant {
+  id: string;
+  unit: string;
+  price: number;
+}
+
 export interface AdminFormProduct {
   id: string;
   name: string;
@@ -27,6 +33,7 @@ export interface AdminFormProduct {
   media_urls: string[] | null;
   health_benefits: string | null;
   cooking_tips: string | null;
+  variants: AdminFormVariant[];
 }
 
 const toForm = (p: AdminProduct): AdminFormProduct => ({
@@ -44,6 +51,7 @@ const toForm = (p: AdminProduct): AdminFormProduct => ({
   media_urls: p.gallery || null,
   health_benefits: p.healthBenefits || null,
   cooking_tips: null,
+  variants: (p.variants || []).map((v) => ({ id: v.id, unit: v.unit, price: v.price })),
 });
 
 const fromForm = (f: Partial<AdminFormProduct>, fallbackId?: string): AdminProduct => ({
@@ -60,6 +68,9 @@ const fromForm = (f: Partial<AdminFormProduct>, fallbackId?: string): AdminProdu
   inStock: f.in_stock !== false,
   gallery: f.media_urls || [],
   healthBenefits: f.health_benefits || '',
+  variants: (f.variants || [])
+    .filter((v) => v.unit && Number(v.price) > 0)
+    .map((v) => ({ id: v.id || `var_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, unit: v.unit, price: Number(v.price) })),
 });
 
 const Admin = () => {
@@ -121,6 +132,7 @@ const Admin = () => {
       media_urls: [],
       health_benefits: '',
       cooking_tips: '',
+      variants: [],
     });
   };
 

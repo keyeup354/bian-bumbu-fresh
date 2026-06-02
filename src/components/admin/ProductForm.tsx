@@ -9,6 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { categories } from '@/data/products';
 import { toast } from 'sonner';
 
+interface Variant {
+  id: string;
+  unit: string;
+  price: number;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -24,6 +30,7 @@ interface Product {
   media_urls: string[] | null;
   health_benefits: string | null;
   cooking_tips: string | null;
+  variants: Variant[];
 }
 
 interface ProductFormProps {
@@ -265,6 +272,69 @@ const ProductForm = ({ editForm, setEditForm, onSave, onCancel, isAdding }: Prod
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Variants (Multi-unit pricing) */}
+      <div className="bg-card rounded-lg p-4 border border-border space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-base font-medium">Varian Ukuran & Harga</Label>
+            <p className="text-xs text-muted-foreground">Tambahkan beberapa pilihan unit (mis. 500g, 1kg) dengan harga masing-masing. Jika diisi, pembeli memilih varian sebelum menambah ke keranjang.</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const newVariant = { id: `var_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, unit: '', price: 0 };
+              setEditForm({ ...editForm, variants: [...(editForm.variants || []), newVariant] });
+            }}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Tambah Varian
+          </Button>
+        </div>
+        {(editForm.variants || []).length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">Belum ada varian. Harga utama di atas akan dipakai.</p>
+        ) : (
+          <div className="space-y-2">
+            {(editForm.variants || []).map((v, idx) => (
+              <div key={v.id || idx} className="flex gap-2 items-center">
+                <Input
+                  placeholder="Unit (mis. 500 gram)"
+                  value={v.unit}
+                  onChange={(e) => {
+                    const next = [...(editForm.variants || [])];
+                    next[idx] = { ...next[idx], unit: e.target.value };
+                    setEditForm({ ...editForm, variants: next });
+                  }}
+                />
+                <Input
+                  type="number"
+                  placeholder="Harga"
+                  value={v.price || ''}
+                  onChange={(e) => {
+                    const next = [...(editForm.variants || [])];
+                    next[idx] = { ...next[idx], price: Number(e.target.value) };
+                    setEditForm({ ...editForm, variants: next });
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive shrink-0"
+                  onClick={() => {
+                    const next = (editForm.variants || []).filter((_, i) => i !== idx);
+                    setEditForm({ ...editForm, variants: next });
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import { Plus, Check, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
 import { AdminProduct } from '@/contexts/ProductsContext';
@@ -15,15 +16,27 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const cartItem = items.find(item => item.id === product.id);
+  const variants = product.variants || [];
+  const hasVariants = variants.length > 0;
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(
+    hasVariants ? variants[0].id : ''
+  );
+  const selectedVariant = hasVariants
+    ? variants.find((v) => v.id === selectedVariantId) || variants[0]
+    : undefined;
+
+  const cartId = selectedVariant ? `${product.id}::${selectedVariant.id}` : product.id;
+  const cartItem = items.find((item) => item.id === cartId);
   const isInCart = !!cartItem;
-  
-  const currentPrice = product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price;
-  const discount = product.isFlashSale && product.flashSalePrice 
+
+  const basePrice = selectedVariant ? selectedVariant.price : product.price;
+  const unitLabel = selectedVariant ? selectedVariant.unit : product.unit;
+  const currentPrice = !hasVariants && product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : basePrice;
+  const discount = !hasVariants && product.isFlashSale && product.flashSalePrice 
     ? Math.round((1 - product.flashSalePrice / product.price) * 100) 
     : 0;
 
-  const isOutOfStock = product.inStock === false;
+  const isOutOfStock = product.inStock === false || (product.stock ?? 0) <= 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -32,7 +45,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       return;
     }
     setIsAdding(true);
-    addToCart(product);
+    addToCart(product, selectedVariant);
     setTimeout(() => setIsAdding(false), 500);
   };
 
@@ -63,7 +76,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           />
           
           {/* Flash Sale Badge */}
-          {product.isFlashSale && !isOutOfStock && (
+          {!hasVariants && product.isFlashSale && !isOutOfStock && (
             <div className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
               -{discount}%
             </div>
@@ -97,14 +110,31 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <h3 className="font-display text-lg font-semibold text-foreground mb-1 line-clamp-1">
             {product.name}
           </h3>
-          <p className="text-sm text-muted-foreground mb-3">{product.unit}</p>
+          <p className="text-sm text-muted-foreground mb-3">{unitLabel}</p>
+
+          {hasVariants && (
+            <div onClick={(e) => e.stopPropagation()} className="mb-3">
+              <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Pilih ukuran" />
+                </SelectTrigger>
+                <SelectContent>
+                  {variants.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.unit} — {formatPrice(v.price)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="font-bold text-lg text-primary">
                 {formatPrice(currentPrice)}
               </span>
-              {product.isFlashSale && product.flashSalePrice && (
+              {!hasVariants && product.isFlashSale && product.flashSalePrice && (
                 <span className="text-xs text-muted-foreground line-through">
                   {formatPrice(product.price)}
                 </span>

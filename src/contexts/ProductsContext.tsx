@@ -13,6 +13,7 @@ interface ProductsContextType {
   updateProduct: (id: string, patch: Partial<AdminProduct>) => void;
   deleteProduct: (id: string) => void;
   setInStock: (id: string, inStock: boolean) => void;
+  decrementStock: (entries: { productId: string; quantity: number }[]) => void;
 }
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
@@ -70,8 +71,21 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, inStock } : p)));
   }, []);
 
+  const decrementStock = useCallback((entries: { productId: string; quantity: number }[]) => {
+    setProducts((prev) =>
+      prev.map((p) => {
+        const total = entries
+          .filter((e) => e.productId === p.id)
+          .reduce((sum, e) => sum + e.quantity, 0);
+        if (!total) return p;
+        const nextStock = Math.max(0, (p.stock ?? 0) - total);
+        return { ...p, stock: nextStock, inStock: nextStock > 0 ? p.inStock !== false : false };
+      })
+    );
+  }, []);
+
   return (
-    <ProductsContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, setInStock }}>
+    <ProductsContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, setInStock, decrementStock }}>
       {children}
     </ProductsContext.Provider>
   );
