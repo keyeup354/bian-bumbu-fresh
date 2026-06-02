@@ -13,6 +13,7 @@ interface ProductsContextType {
   updateProduct: (id: string, patch: Partial<AdminProduct>) => void;
   deleteProduct: (id: string) => void;
   setInStock: (id: string, inStock: boolean) => void;
+  decrementStock: (entries: { productId: string; quantity: number }[]) => void;
 }
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
