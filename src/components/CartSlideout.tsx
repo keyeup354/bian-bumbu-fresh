@@ -124,6 +124,9 @@ const CartSlideout = () => {
         console.error('n8n webhook error:', webhookErr);
       }
 
+      // Auto-decrement local stock based on purchased quantities
+      decrementStock(items.map((it) => ({ productId: it.productId || it.id, quantity: it.quantity })));
+
       toast.success('Pesanan berhasil dikirim! Kami akan segera menghubungi Anda.');
       clearCart();
       setCustomerName('');
