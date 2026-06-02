@@ -26,6 +26,7 @@ interface Product {
   media_urls: string[] | null;
   health_benefits: string | null;
   cooking_tips: string | null;
+  variants?: { id: string; unit: string; price: number }[];
 }
 
 interface ProductTableProps {
