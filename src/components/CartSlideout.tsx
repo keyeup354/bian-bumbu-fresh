@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCart } from '@/contexts/CartContext';
+import { useProducts } from '@/contexts/ProductsContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
