@@ -190,41 +190,42 @@ Deno.serve(async (req) => {
     // Create a lookup map for products by name
     const productMap = new Map(products.map(p => [p.name, p]));
 
-    // Validate all products exist and build validated items with SERVER prices
+    // Products are managed locally on the client (localStorage). DB lookup is
+    // best-effort: use server price/stock when available, otherwise fall back to
+    // client-provided values (sanitized & bounded).
     const validatedItems: OrderItem[] = [];
     for (const item of body.items) {
       const itemName = sanitizeString(item.name, 200);
       const product = productMap.get(itemName);
-      
-      if (!product) {
-        return new Response(
-          JSON.stringify({ error: `Product not found: ${itemName}` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
       const quantity = Math.max(1, Math.min(Math.floor(item.quantity), 1000));
 
-      // Check stock availability
-      if (product.stock < quantity) {
-        return new Response(
-          JSON.stringify({ error: `Insufficient stock for ${itemName}. Available: ${product.stock}` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      if (product) {
+        if (product.stock < quantity) {
+          return new Response(
+            JSON.stringify({ error: `Insufficient stock for ${itemName}. Available: ${product.stock}` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const serverPrice = product.is_flash_sale && product.flash_sale_price
+          ? product.flash_sale_price
+          : product.price;
+        validatedItems.push({
+          id: product.id,
+          name: product.name,
+          price: serverPrice,
+          quantity,
+          unit: product.unit || item.unit,
+        });
+      } else {
+        const price = Math.max(0, Math.min(Number(item.price) || 0, 100000000));
+        validatedItems.push({
+          id: sanitizeString(String(item.id || itemName), 100),
+          name: itemName,
+          price,
+          quantity,
+          unit: item.unit ? sanitizeString(item.unit, 20) : 'pcs',
+        });
       }
-
-      // Use SERVER-SIDE price, not client-provided price
-      const serverPrice = product.is_flash_sale && product.flash_sale_price 
-        ? product.flash_sale_price 
-        : product.price;
-
-      validatedItems.push({
-        id: product.id,
-        name: product.name,
-        price: serverPrice,
-        quantity: quantity,
-        unit: product.unit || item.unit,
-      });
     }
 
     // Calculate total using validated server prices
