@@ -132,6 +132,7 @@ const Admin = () => {
       media_urls: [],
       health_benefits: '',
       cooking_tips: '',
+      variants: [],
     });
   };
 
