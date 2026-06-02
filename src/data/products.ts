@@ -21,6 +21,12 @@ export const categories = [
   { id: 'essentials', name: 'Kebutuhan Dapur', icon: '🧅', description: 'Kitchen essentials' },
 ];
 
+export interface ProductVariant {
+  id: string;
+  unit: string;
+  price: number;
+}
+
 export interface ExtendedProduct extends Product {
   isFlashSale?: boolean;
   flashSalePrice?: number;
@@ -29,6 +35,7 @@ export interface ExtendedProduct extends Product {
   healthBenefits?: string;
   nutrition?: string;
   gallery?: string[];
+  variants?: ProductVariant[];
 }
 
 export const products: ExtendedProduct[] = [
