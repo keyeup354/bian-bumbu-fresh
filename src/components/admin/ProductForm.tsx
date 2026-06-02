@@ -9,6 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { categories } from '@/data/products';
 import { toast } from 'sonner';
 
+interface Variant {
+  id: string;
+  unit: string;
+  price: number;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -24,6 +30,7 @@ interface Product {
   media_urls: string[] | null;
   health_benefits: string | null;
   cooking_tips: string | null;
+  variants: Variant[];
 }
 
 interface ProductFormProps {
