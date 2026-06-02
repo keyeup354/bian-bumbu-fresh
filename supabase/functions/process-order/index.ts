@@ -179,16 +179,12 @@ Deno.serve(async (req) => {
       .select('id, name, price, is_flash_sale, flash_sale_price, stock, unit')
       .in('name', productNames);
 
-    if (productsError || !products) {
-      console.error('Failed to fetch products:', productsError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to validate products' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (productsError) {
+      console.warn('Products lookup failed, falling back to client data:', productsError);
     }
 
-    // Create a lookup map for products by name
-    const productMap = new Map(products.map(p => [p.name, p]));
+    // Lookup map (may be empty if DB has no matching products)
+    const productMap = new Map((products || []).map(p => [p.name, p]));
 
     // Products are managed locally on the client (localStorage). DB lookup is
     // best-effort: use server price/stock when available, otherwise fall back to
