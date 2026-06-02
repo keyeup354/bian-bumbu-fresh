@@ -13,6 +13,7 @@ type PaymentMethod = 'COD' | 'E-Wallet' | 'TF';
 
 const CartSlideout = () => {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, totalItems, clearCart } = useCart();
+  const { decrementStock } = useProducts();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
