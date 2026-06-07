@@ -1,0 +1,1 @@
+CREATE POLICY "Block direct order inserts from clients" ON public.orders FOR INSERT TO anon, authenticated WITH CHECK (false);
