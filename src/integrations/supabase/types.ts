@@ -61,6 +61,7 @@ export type Database = {
           health_benefits: string | null
           id: string
           image_url: string | null
+          in_stock: boolean
           is_featured: boolean | null
           is_flash_sale: boolean | null
           media_urls: string[] | null
@@ -69,6 +70,7 @@ export type Database = {
           stock: number
           unit: string
           updated_at: string
+          variants: Json
         }
         Insert: {
           category: string
@@ -80,6 +82,7 @@ export type Database = {
           health_benefits?: string | null
           id?: string
           image_url?: string | null
+          in_stock?: boolean
           is_featured?: boolean | null
           is_flash_sale?: boolean | null
           media_urls?: string[] | null
@@ -88,6 +91,7 @@ export type Database = {
           stock?: number
           unit?: string
           updated_at?: string
+          variants?: Json
         }
         Update: {
           category?: string
@@ -99,6 +103,7 @@ export type Database = {
           health_benefits?: string | null
           id?: string
           image_url?: string | null
+          in_stock?: boolean
           is_featured?: boolean | null
           is_flash_sale?: boolean | null
           media_urls?: string[] | null
@@ -107,6 +112,7 @@ export type Database = {
           stock?: number
           unit?: string
           updated_at?: string
+          variants?: Json
         }
         Relationships: []
       }
@@ -172,6 +178,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrement_product_stock: {
+        Args: { _id: string; _qty: number }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
