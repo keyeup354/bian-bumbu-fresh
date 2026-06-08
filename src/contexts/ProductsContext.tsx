@@ -130,7 +130,7 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addProduct = useCallback(async (product: AdminProduct) => {
     const row = productToRow(product);
-    const { error } = await supabase.from('products').insert(row);
+    const { error } = await supabase.from('products').insert(row as never);
     if (error) {
       console.error('addProduct error:', error);
       throw error;
@@ -139,9 +139,8 @@ export const ProductsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateProduct = useCallback(async (id: string, patch: Partial<AdminProduct>) => {
     const row = productToRow({ ...patch, id });
-    // Strip id from update payload
     const { id: _omit, ...updateData } = row;
-    const { error } = await supabase.from('products').update(updateData).eq('id', id);
+    const { error } = await supabase.from('products').update(updateData as never).eq('id', id);
     if (error) {
       console.error('updateProduct error:', error);
       throw error;
