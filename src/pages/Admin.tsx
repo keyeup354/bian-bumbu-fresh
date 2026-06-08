@@ -86,27 +86,35 @@ const Admin = () => {
     setEditForm(product);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editForm.name) {
       toast.error('Nama produk wajib diisi');
       return;
     }
-    if (isAdding) {
-      addProduct(fromForm(editForm));
-      toast.success('Produk berhasil ditambahkan');
-      setIsAdding(false);
-    } else if (isEditing) {
-      updateProduct(isEditing, fromForm(editForm, isEditing));
-      toast.success('Produk berhasil diperbarui');
-      setIsEditing(null);
+    try {
+      if (isAdding) {
+        await addProduct(fromForm(editForm));
+        toast.success('Produk berhasil ditambahkan');
+        setIsAdding(false);
+      } else if (isEditing) {
+        await updateProduct(isEditing, fromForm(editForm, isEditing));
+        toast.success('Produk berhasil diperbarui');
+        setIsEditing(null);
+      }
+      setEditForm({});
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan produk');
     }
-    setEditForm({});
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
-      deleteProduct(id);
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
+    try {
+      await deleteProduct(id);
       toast.success('Produk berhasil dihapus');
+    } catch {
+      toast.error('Gagal menghapus produk');
     }
   };
 

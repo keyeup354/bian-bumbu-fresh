@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCart } from '@/contexts/CartContext';
-import { useProducts } from '@/contexts/ProductsContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,7 +12,6 @@ type PaymentMethod = 'COD' | 'E-Wallet' | 'TF';
 
 const CartSlideout = () => {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, totalItems, clearCart } = useCart();
-  const { decrementStock } = useProducts();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,8 +122,7 @@ const CartSlideout = () => {
         console.error('n8n webhook error:', webhookErr);
       }
 
-      // Auto-decrement local stock based on purchased quantities
-      decrementStock(items.map((it) => ({ productId: it.productId || it.id, quantity: it.quantity })));
+      // Stock decrement is handled server-side by the process-order edge function.
 
       toast.success('Pesanan berhasil dikirim! Kami akan segera menghubungi Anda.');
       clearCart();

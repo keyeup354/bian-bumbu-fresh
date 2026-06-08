@@ -170,52 +170,67 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Extract product names from order items (using name since client uses local non-UUID IDs)
+    // Look up products by id (preferred) and name (fallback for legacy clients)
+    const productIds = body.items
+      .map((item: OrderItem) => sanitizeString(String(item.id || ''), 100))
+      .filter((id: string) => id.length > 0);
     const productNames = body.items.map((item: OrderItem) => sanitizeString(item.name, 200));
 
-    // Fetch actual prices from database to prevent price manipulation
-    const { data: products, error: productsError } = await supabase
-      .from('products')
-      .select('id, name, price, is_flash_sale, flash_sale_price, stock, unit')
-      .in('name', productNames);
+    const [{ data: byId, error: byIdErr }, { data: byName, error: byNameErr }] = await Promise.all([
+      productIds.length
+        ? supabase.from('products').select('id, name, price, is_flash_sale, flash_sale_price, stock, unit, variants').in('id', productIds)
+        : Promise.resolve({ data: [], error: null } as { data: never[]; error: null }),
+      supabase.from('products').select('id, name, price, is_flash_sale, flash_sale_price, stock, unit, variants').in('name', productNames),
+    ]);
+    if (byIdErr) console.warn('Product id lookup failed:', byIdErr);
+    if (byNameErr) console.warn('Product name lookup failed:', byNameErr);
 
-    if (productsError) {
-      console.warn('Products lookup failed, falling back to client data:', productsError);
-    }
+    const productById = new Map((byId || []).map((p) => [p.id, p]));
+    const productByName = new Map((byName || []).map((p) => [p.name, p]));
 
-    // Lookup map (may be empty if DB has no matching products)
-    const productMap = new Map((products || []).map(p => [p.name, p]));
-
-    // Products are managed locally on the client (localStorage). DB lookup is
-    // best-effort: use server price/stock when available, otherwise fall back to
-    // client-provided values (sanitized & bounded).
     const validatedItems: OrderItem[] = [];
+    const stockDecrements: { id: string; qty: number }[] = [];
+
     for (const item of body.items) {
       const itemName = sanitizeString(item.name, 200);
-      const product = productMap.get(itemName);
+      const itemId = sanitizeString(String(item.id || ''), 100);
+      const product = productById.get(itemId) || productByName.get(itemName);
       const quantity = Math.max(1, Math.min(Math.floor(item.quantity), 1000));
 
       if (product) {
         if (product.stock < quantity) {
           return new Response(
-            JSON.stringify({ error: `Insufficient stock for ${itemName}. Available: ${product.stock}` }),
+            JSON.stringify({ error: `Insufficient stock for ${product.name}. Available: ${product.stock}` }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        const serverPrice = product.is_flash_sale && product.flash_sale_price
-          ? product.flash_sale_price
-          : product.price;
+        // Resolve price: variant > flash sale > regular
+        let serverPrice = product.is_flash_sale && product.flash_sale_price
+          ? Number(product.flash_sale_price)
+          : Number(product.price);
+        let serverUnit = product.unit || item.unit;
+        const variants = Array.isArray(product.variants) ? product.variants : [];
+        // Client may send composite id "productId::variantId" via item.id; or unit hints variant
+        const variantIdHint = itemId.includes('::') ? itemId.split('::')[1] : '';
+        const matchedVariant = variants.find((v: { id: string; unit: string; price: number }) =>
+          (variantIdHint && v.id === variantIdHint) || (item.unit && v.unit === item.unit)
+        );
+        if (matchedVariant) {
+          serverPrice = Number(matchedVariant.price);
+          serverUnit = matchedVariant.unit;
+        }
         validatedItems.push({
           id: product.id,
           name: product.name,
           price: serverPrice,
           quantity,
-          unit: product.unit || item.unit,
+          unit: serverUnit,
         });
+        stockDecrements.push({ id: product.id, qty: quantity });
       } else {
         const price = Math.max(0, Math.min(Number(item.price) || 0, 100000000));
         validatedItems.push({
-          id: sanitizeString(String(item.id || itemName), 100),
+          id: itemId || itemName,
           name: itemName,
           price,
           quantity,
@@ -252,6 +267,15 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Auto-decrement stock for items that exist in the products table.
+    // Fire and forget per item; failure here doesn't fail the order.
+    await Promise.all(
+      stockDecrements.map(({ id, qty }) =>
+        supabase.rpc('decrement_product_stock', { _id: id, _qty: qty })
+          .then(({ error }) => { if (error) console.warn('decrement_product_stock failed', id, error); })
+      )
+    );
 
     // Format helper for currency
     const formatRupiah = (amount: number) => {
