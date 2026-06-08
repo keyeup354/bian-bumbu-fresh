@@ -268,6 +268,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Auto-decrement stock for items that exist in the products table.
+    // Fire and forget per item; failure here doesn't fail the order.
+    await Promise.all(
+      stockDecrements.map(({ id, qty }) =>
+        supabase.rpc('decrement_product_stock', { _id: id, _qty: qty })
+          .then(({ error }) => { if (error) console.warn('decrement_product_stock failed', id, error); })
+      )
+    );
+
     // Format helper for currency
     const formatRupiah = (amount: number) => {
       return new Intl.NumberFormat('id-ID', {
