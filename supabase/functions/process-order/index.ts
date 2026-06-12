@@ -94,8 +94,6 @@ async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
   return !data || data.length < RATE_LIMIT_MAX_ORDERS;
 }
 
-// Webhook URL for n8n webhook (production)
-const WEBHOOK_URL = 'https://n8n.arry.my.id/webhook/Bian-bumbus';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -277,81 +275,7 @@ Deno.serve(async (req) => {
       )
     );
 
-    // Format helper for currency
-    const formatRupiah = (amount: number) => {
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(amount);
-    };
 
-    // Format order items for webhook with product details and total
-    const pesananLines = validatedItems.map(item => {
-      const subtotal = item.price * item.quantity;
-      return `${item.name} x${item.quantity} (${item.unit || 'pcs'}) @ ${formatRupiah(item.price)} = ${formatRupiah(subtotal)}`;
-    });
-    // Add total at the bottom
-    pesananLines.push(`---`);
-    pesananLines.push(`TOTAL: ${formatRupiah(totalAmount)}`);
-    const pesananText = pesananLines.join('\n');
-
-    // Get current date and time in Indonesia timezone (YYYY-MM-DD HH:mm:ss)
-    const now = new Date();
-    const indonesiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-    const year = indonesiaTime.getFullYear();
-    const month = String(indonesiaTime.getMonth() + 1).padStart(2, '0');
-    const day = String(indonesiaTime.getDate()).padStart(2, '0');
-    const hours = String(indonesiaTime.getHours()).padStart(2, '0');
-    const minutes = String(indonesiaTime.getMinutes()).padStart(2, '0');
-    const seconds = String(indonesiaTime.getSeconds()).padStart(2, '0');
-    const waktu = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-
-    // Get payment method from request (default to 'COD' if not provided)
-    const paymentMethod = body.paymentMethod ? sanitizeString(body.paymentMethod, 50) : 'COD';
-
-    // Build single-line order summary: 'Bayam Hijau (2), Sawi Putih (1)'
-    const pesanan = validatedItems
-      .map(item => `${item.name} (${item.quantity})`)
-      .join(', ');
-
-    // Send data to webhook (n8n) with the requested simple shape
-    const webhookPayload = {
-      waktu,
-      nama: customerName,
-      pesanan,
-      alamat: deliveryAddress,
-      method_bayar: paymentMethod,
-    };
-
-    console.log('=== GOOGLE SHEETS WEBHOOK DEBUG ===');
-    console.log('URL:', WEBHOOK_URL);
-    console.log('Payload:', JSON.stringify(webhookPayload, null, 2));
-
-    try {
-      const webhookResponse = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookPayload),
-        redirect: 'follow',
-      });
-
-      const responseBody = await webhookResponse.text();
-      console.log('Google Sheets response status:', webhookResponse.status, webhookResponse.statusText);
-      console.log('Google Sheets response body:', responseBody);
-
-      if (!webhookResponse.ok) {
-        console.error('Google Sheets webhook failed:', webhookResponse.status, responseBody);
-      } else {
-        console.log('Google Sheets webhook sent successfully!');
-      }
-    } catch (webhookError) {
-      console.error('Google Sheets webhook error:', webhookError instanceof Error ? webhookError.message : String(webhookError));
-      // Don't fail the order if webhook fails - order is already saved in DB
-    }
 
     return new Response(
       JSON.stringify({ 

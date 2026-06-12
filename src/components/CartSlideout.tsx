@@ -90,39 +90,8 @@ const CartSlideout = () => {
         return;
       }
 
-      // Also send directly from the client to the n8n webhook (production)
-      try {
-        const now = new Date();
-        const jakarta = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-        const pad = (n: number) => String(n).padStart(2, '0');
-        const waktu = `${jakarta.getFullYear()}-${pad(jakarta.getMonth() + 1)}-${pad(jakarta.getDate())} ${pad(jakarta.getHours())}:${pad(jakarta.getMinutes())}:${pad(jakarta.getSeconds())}`;
-        const itemLines = items.map(item => `${item.name} (${item.quantity}x) - ${formatPrice(item.price * item.quantity)}`);
-        const pesanan = [
-          ...itemLines,
-          `Total Item: ${totalItems} pcs`,
-          `Total Belanja: ${formatPrice(totalPrice)}`
-        ].join('\n');
+      // Order saved & stock decremented server-side by the process-order edge function.
 
-        const webhookResponse = await fetch('https://n8n.arry.my.id/webhook/Bian-bumbus', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify({
-            waktu,
-            nama: trimmedName,
-            pesanan,
-            alamat: savedAddress,
-            method_bayar: paymentMethod,
-          }),
-        });
-        console.log('n8n webhook response:', webhookResponse.status);
-      } catch (webhookErr) {
-        console.error('n8n webhook error:', webhookErr);
-      }
-
-      // Stock decrement is handled server-side by the process-order edge function.
 
       toast.success('Pesanan berhasil dikirim! Kami akan segera menghubungi Anda.');
       clearCart();
