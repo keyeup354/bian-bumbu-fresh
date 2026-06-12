@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { ShoppingBag, Clock, Package, CheckCircle, XCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
 
 interface OrderItem {
   id: string;
@@ -59,7 +61,38 @@ const OrdersPanel = ({ onOrdersCountChange }: OrdersPanelProps) => {
 
   useEffect(() => {
     fetchOrders();
+
+    // Realtime: refresh when orders change
+    const channel = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => fetchOrders()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    const prev = orders;
+    setOrders((curr) => curr.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('id', orderId);
+    if (error) {
+      console.error('Failed to update status:', error);
+      toast.error('Gagal memperbarui status');
+      setOrders(prev);
+    } else {
+      toast.success('Status pesanan diperbarui');
+    }
+  };
+
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -196,7 +229,25 @@ const OrdersPanel = ({ onOrdersCountChange }: OrdersPanelProps) => {
                         <p className="text-sm text-muted-foreground">{order.notes}</p>
                       </div>
                     )}
+                    <div>
+                      <p className="text-sm font-medium mb-1">Ubah Status</p>
+                      <Select
+                        value={order.status}
+                        onValueChange={(val) => handleStatusChange(order.id, val)}
+                      >
+                        <SelectTrigger className="w-full md:w-48 bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Menunggu</SelectItem>
+                          <SelectItem value="processing">Diproses</SelectItem>
+                          <SelectItem value="completed">Selesai</SelectItem>
+                          <SelectItem value="cancelled">Dibatalkan</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+
                   
                   <div>
                     <p className="text-sm font-medium mb-2">Detail Pesanan</p>
