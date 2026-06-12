@@ -229,7 +229,25 @@ const OrdersPanel = ({ onOrdersCountChange }: OrdersPanelProps) => {
                         <p className="text-sm text-muted-foreground">{order.notes}</p>
                       </div>
                     )}
+                    <div>
+                      <p className="text-sm font-medium mb-1">Ubah Status</p>
+                      <Select
+                        value={order.status}
+                        onValueChange={(val) => handleStatusChange(order.id, val)}
+                      >
+                        <SelectTrigger className="w-full md:w-48 bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Menunggu</SelectItem>
+                          <SelectItem value="processing">Diproses</SelectItem>
+                          <SelectItem value="completed">Selesai</SelectItem>
+                          <SelectItem value="cancelled">Dibatalkan</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+
                   
                   <div>
                     <p className="text-sm font-medium mb-2">Detail Pesanan</p>
