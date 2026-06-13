@@ -10,7 +10,7 @@ Panduan untuk men-deploy backend Bian Bumbu ke project Supabase milikmu sendiri 
 
 1. Login ke [Supabase Dashboard](https://supabase.com/dashboard) → pilih project barumu.
 2. Buka **SQL Editor** → New query.
-3. Buka file `supabase/migrations/fresh-start.sql` di repo ini, copy seluruh isinya, paste ke SQL Editor.
+3. Buka file `docs/fresh-start.sql` di repo ini, copy seluruh isinya, paste ke SQL Editor.
 4. Klik **Run**. Harus sukses tanpa error.
 
 Yang dibuat:
