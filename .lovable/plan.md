@@ -1,50 +1,61 @@
+
 ## Goal
-Remove the n8n webhook from checkout, keep a thin `process-order` edge function that recomputes totals server-side and inserts into Supabase, and add admin status management on `/admin`. Existing column names (`customer_phone`, `delivery_address`, `items`, `total_amount`) are preserved.
+Kamu mau pindah dari Lovable Cloud ke project Supabase baru milikmu sendiri (env vars sudah di-set di Vercel). Karena Lovable Cloud tidak bisa mendorong migration atau deploy edge function ke project Supabase eksternal, aku akan menyiapkan **bundle migration + instruksi eksekusi manual** yang kamu jalankan sendiri di Supabase dashboard & CLI.
+
+## Penting untuk dipahami dulu
+
+1. **Lovable Cloud tetap aktif di project ini.** Tidak bisa di-disconnect. Itu artinya `.env` di repo (`VITE_SUPABASE_URL/PROJECT_ID/PUBLISHABLE_KEY`) akan tetap auto-generated menunjuk ke Lovable Cloud. Di **Vercel** kamu override env vars itu ke Supabase barumu — itu sudah benar dan akan jalan di production Vercel. Tapi **preview Lovable** akan tetap pakai Lovable Cloud (DB lama).
+2. **Edge function `process-order` harus kamu deploy manual** ke Supabase barumu pakai Supabase CLI. Tool migration Lovable hanya mendorong ke Lovable Cloud.
+3. **Secrets edge function** (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`) harus kamu set di Supabase project baru via dashboard.
 
 ## Steps
 
-### 1. Database migration (RLS only — no schema rename)
-- Keep existing `orders` columns intact.
-- Drop policy `Block direct order inserts from clients`.
-- Add INSERT policy for `service_role` only (edge function uses service role) — public/anon cannot insert directly.
-- Keep SELECT policy: admin only.
-- Add UPDATE policy: admin only (`has_role(auth.uid(), 'admin')`) so admins can change status.
-- GRANTs: keep `service_role` ALL, `authenticated` SELECT/UPDATE; remove anon insert grant if present.
+### 1. Buat satu file SQL lengkap: `supabase/migrations/fresh-start.sql`
+Berisi semua yang dibutuhkan untuk fresh DB:
 
-### 2. Edge function `process-order` (thin + secure)
-- Strip out all n8n webhook code.
-- Validate input with zod (name ≥2, phone regex, address ≥10, items non-empty).
-- For each item: fetch product from `products` table by id, use **server-side price** (respect `flash_sale_price` if `is_flash_sale=true` and not expired, otherwise variant price by `variantId`, otherwise base `price`). Reject if product missing or `in_stock=false` / `stock < qty`.
-- Recompute `total_amount` server-side.
-- Insert into `orders` via service-role client with recomputed total and trusted item snapshot (name, price, qty, unit).
-- Decrement stock via existing `decrement_product_stock` RPC per item.
-- Return `{ orderId }`.
-- Remove `WEBHOOK_URL` usage entirely.
+- **Enum `app_role`** (`admin`, `user`)
+- **Tables:**
+  - `products` (id text PK, name, description, price, unit, category, image_url, stock, in_stock, is_flash_sale, flash_sale_price, flash_sale_ends_at, media_urls, health_benefits, cooking_tips, variants jsonb, is_featured, created_at, updated_at)
+  - `orders` (id uuid PK, customer_name, customer_phone, delivery_address, items jsonb, total_amount, status default 'pending', notes, created_at)
+  - `promotions` (id, title, description, discount_percentage, banner_image_url, is_active, starts_at, ends_at, created_at)
+  - `user_roles` (id, user_id refs auth.users, role app_role, created_at; UNIQUE(user_id, role))
+- **GRANTs** per table (sesuai aturan public schema)
+- **Enable RLS** + **policies**:
+  - `products`: SELECT public; INSERT/UPDATE/DELETE admin-only
+  - `promotions`: SELECT public; INSERT/UPDATE/DELETE admin-only
+  - `orders`: INSERT service_role only; SELECT/UPDATE admin-only; no DELETE
+  - `user_roles`: SELECT own row; no client-side INSERT/UPDATE/DELETE (admin via service role)
+- **Functions** (security definer, search_path=public):
+  - `has_role(_user_id uuid, _role app_role) returns boolean`
+  - `decrement_product_stock(_id text, _qty integer) returns void`
+  - `update_updated_at_column()` trigger function
+- **Trigger** `update_products_updated_at` di `products`
+- **Storage bucket** `product-media` (public) — note: bucket harus dibuat via dashboard atau CLI karena SQL bucket API berbeda; akan disediakan snippet `storage.buckets` insert
+- **Realtime publication:** `ALTER PUBLICATION supabase_realtime ADD TABLE public.orders, public.products`
 
-### 3. Checkout (`src/components/CartSlideout.tsx`)
-- Keep current invocation of `supabase.functions.invoke('process-order', ...)`.
-- Remove the entire client-side `fetch('https://n8n.arry.my.id/webhook/...')` block.
-- Keep existing UI/layout exactly as is (form fields, payment radio, summary, buttons).
+### 2. Buat `MIGRATION_GUIDE.md` di root project
+Step-by-step buat kamu:
 
-### 4. Admin status UI (`src/components/admin/OrdersPanel.tsx`)
-- Keep existing list/expand layout.
-- In each expanded order, add a Select dropdown: `pending → processing → completed → cancelled`.
-- On change: `supabase.from('orders').update({ status }).eq('id', id)` + toast + local state update.
-- Add realtime subscription (`postgres_changes` on `orders`) so new orders appear without manual refresh.
+1. Login Supabase dashboard → SQL Editor → paste isi `fresh-start.sql` → Run
+2. Buat storage bucket `product-media` (public) di Storage tab
+3. Install Supabase CLI, `supabase login`, `supabase link --project-ref <ref-baru>`
+4. `supabase functions deploy process-order --no-verify-jwt`
+5. Set edge function secrets di dashboard (Settings → Edge Functions → Secrets): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
+6. Bikin admin user: signup lewat app, lalu di SQL editor: `INSERT INTO user_roles (user_id, role) VALUES ('<uuid>', 'admin');`
+7. Verifikasi: cek di Vercel `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID` sudah menunjuk ke project baru → redeploy Vercel
+8. Test checkout end-to-end
 
-### 5. Cleanup & verification
-- Delete `WEBHOOK_URL` references from code (secret can stay in vault, unused).
-- Run supabase linter after migration.
-- Update memory: replace "SIM AI webhook" mention with "direct Supabase insert via process-order edge function".
+### 3. Tidak ada perubahan kode aplikasi
+Schema & RLS dirancang identik dengan yang sekarang, jadi semua file React/edge function existing langsung kompatibel. Tidak perlu edit `CartSlideout.tsx`, `OrdersPanel.tsx`, `ProductsContext.tsx`, atau `process-order/index.ts`.
 
-## Files touched
-- new migration: RLS policy updates on `orders`
-- `supabase/functions/process-order/index.ts` — rewritten (no webhook, server-side pricing, direct insert)
-- `src/components/CartSlideout.tsx` — remove n8n fetch block only
-- `src/components/admin/OrdersPanel.tsx` — add status Select + realtime
-- `mem://features/order-processing` — update
+## Files yang dibuat
+- `supabase/migrations/fresh-start.sql` — satu file SQL lengkap untuk paste ke Supabase baru
+- `MIGRATION_GUIDE.md` — panduan eksekusi manual
 
-## Security guarantees
-- Client cannot insert orders directly (RLS blocks anon/authenticated INSERT).
-- Prices always come from the `products` table inside the edge function — client-sent prices are ignored.
-- Only admins can read/update orders.
+## Yang TIDAK aku lakukan (dan kenapa)
+- Tidak menjalankan migration via tool Lovable (itu akan masuk ke Lovable Cloud DB, bukan Supabase barumu)
+- Tidak deploy edge function (Lovable tidak punya akses ke Supabase project eksternal)
+- Tidak edit `.env` lokal (auto-generated oleh Lovable, akan ter-overwrite)
+
+## Konfirmasi sebelum eksekusi
+Kalau plan ini oke, klik **Implement plan** dan aku akan generate dua file di atas.
