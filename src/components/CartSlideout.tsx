@@ -98,7 +98,7 @@ const CartSlideout = () => {
           .map((it) => `${it.name} (${it.unit}) x${it.quantity}`)
           .join(', ');
         await fetch(
-          'https://n8n.arry.my.id/webhook-test/0c192261-7e1c-4609-9183-90c4016aa95f',
+          'https://n8n.arry.my.id/webhook/0c192261-7e1c-4609-9183-90c4016aa95f',
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
