@@ -92,6 +92,28 @@ const CartSlideout = () => {
 
       // Order saved & stock decremented server-side by the process-order edge function.
 
+      // Fire-and-forget webhook notification to n8n
+      try {
+        const pesananStr = items
+          .map((it) => `${it.name} (${it.unit}) x${it.quantity}`)
+          .join(', ');
+        await fetch(
+          'https://n8n.arry.my.id/webhook-test/0c192261-7e1c-4609-9183-90c4016aa95f',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nama: trimmedName,
+              pesanan: pesananStr,
+              total: totalPrice,
+              alamat: savedAddress,
+              metode_pembayaran: paymentMethod,
+            }),
+          }
+        );
+      } catch (webhookError) {
+        console.log('Webhook notification failed:', webhookError);
+      }
 
       toast.success('Pesanan berhasil dikirim! Kami akan segera menghubungi Anda.');
       clearCart();
