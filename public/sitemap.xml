@@ -36,11 +36,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bian-bumbu.lovable.app/product/94403d2c-f8a4-46dc-919e-848635753b46</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://bian-bumbu.lovable.app/product/82565ba1-1a11-4c73-8d3a-6a153320cb08</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -96,6 +91,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://bian-bumbu.lovable.app/product/s1</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://bian-bumbu.lovable.app/product/prod_1780989755402_oxpbzl</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -111,7 +111,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bian-bumbu.lovable.app/product/v4</loc>
+    <loc>https://bian-bumbu.lovable.app/product/640cd635-3be2-471a-9ed7-671ccf123b5d</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -121,12 +121,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bian-bumbu.lovable.app/product/640cd635-3be2-471a-9ed7-671ccf123b5d</loc>
+    <loc>https://bian-bumbu.lovable.app/product/94403d2c-f8a4-46dc-919e-848635753b46</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bian-bumbu.lovable.app/product/s1</loc>
+    <loc>https://bian-bumbu.lovable.app/product/p2</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -136,7 +136,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bian-bumbu.lovable.app/product/p2</loc>
+    <loc>https://bian-bumbu.lovable.app/product/v4</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
