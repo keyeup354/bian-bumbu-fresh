@@ -29,13 +29,6 @@ export interface ExtendedProduct extends Product {
 
 export const promotions = [
   {
-    id: 'promo1',
-    title: 'Flash Sale Sayuran',
-    description: 'Diskon hingga 30% untuk semua sayuran segar!',
-    discountPercentage: 30,
-    isActive: true,
-  },
-  {
     id: 'promo2',
     title: 'Gratis Ongkir',
     description: 'Gratis ongkir untuk pembelian minimal Rp 50.000',
