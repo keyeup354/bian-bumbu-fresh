@@ -4,7 +4,6 @@ import CategoryCard from '@/components/CategoryCard';
 import ProductCard from '@/components/ProductCard';
 import CartSlideout from '@/components/CartSlideout';
 import Footer from '@/components/Footer';
-import FlashSaleBanner from '@/components/FlashSaleBanner';
 import PromoBanner from '@/components/PromoBanner';
 import DeliverySection from '@/components/DeliverySection';
 import { categories } from '@/data/products';
@@ -15,15 +14,12 @@ import { Link } from 'react-router-dom';
 
 const Index = () => {
   const { products } = useProducts();
-  const featuredProducts = products.filter((p) => p.isFlashSale).concat(
-    products.filter((p) => !p.isFlashSale)
-  ).slice(0, 8);
+  const featuredProducts = products.slice(0, 8);
 
 
 
   return (
     <div className="min-h-screen bg-background">
-      <FlashSaleBanner />
       <Header />
       <CartSlideout />
 
