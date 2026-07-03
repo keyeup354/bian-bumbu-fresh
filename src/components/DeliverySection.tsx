@@ -2,10 +2,8 @@ import { Phone, MapPin, Clock, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const DeliverySection = () => {
-  const handleWhatsAppCall = () => {
-    const phoneNumber = '6285793874290';
-    const message = encodeURIComponent('Halo, saya ingin memesan sayuran segar dari Bian Bumbu. Bisa dibantu?');
-    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+  const handleWhatsAppClick = () => {
+    window.open('https://wa.me/6285793784290', '_blank');
   };
   return (
     <section className="py-16 md:py-20 bg-gradient-to-br from-primary/5 via-background to-terracotta/5">
@@ -52,7 +50,7 @@ const DeliverySection = () => {
               variant="whatsapp" 
               size="xl" 
               className="rounded-full"
-              onClick={handleWhatsAppCall}
+              onClick={handleWhatsAppClick}
             >
               <MessageCircle className="w-5 h-5" />
               Pesan Sekarang via WhatsApp
