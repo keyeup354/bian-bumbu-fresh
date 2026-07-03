@@ -87,7 +87,7 @@ const AddressGate = ({ onSubmit }: AddressGateProps) => {
 
         {/* Footer */}
         <p className="text-center text-white/60 text-sm mt-6">
-          Hubungi kami: +62 857-9387-4290
+          Hubungi kami: +62 857-9378-4290
         </p>
       </div>
     </div>
