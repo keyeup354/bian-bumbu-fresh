@@ -81,9 +81,9 @@ var get_product_default = defineTool2({
 // src/lib/mcp/index.ts
 var mcp_default = defineMcp({
   name: "butuhsayur-mcp",
-  title: "Bian Bumbu MCP",
+  title: "ButuhSayur MCP",
   version: "0.1.0",
-  instructions: "Tools for the Bian Bumbu online store. Use `list_products` to browse the catalog and `get_product` to fetch details for a specific product by ID. Delivery is limited to Bandung.",
+  instructions: "Tools for the ButuhSayur online store. Use `list_products` to browse the catalog and `get_product` to fetch details for a specific product by ID. Delivery is limited to Bandung.",
   tools: [list_products_default, get_product_default]
 });
 
