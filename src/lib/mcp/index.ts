@@ -3,7 +3,7 @@ import listProductsTool from "./tools/list-products";
 import getProductTool from "./tools/get-product";
 
 export default defineMcp({
-  name: "bian-bumbu-mcp",
+  name: "butuhsayur-mcp",
   title: "Bian Bumbu MCP",
   version: "0.1.0",
   instructions:

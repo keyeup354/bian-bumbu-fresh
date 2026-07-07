@@ -7,7 +7,7 @@
   },
   "mcp": {
     "server": {
-      "name": "bian-bumbu-mcp",
+      "name": "butuhsayur-mcp",
       "version": "0.1.0",
       "title": "Bian Bumbu MCP"
     },
@@ -15,7 +15,7 @@
       {
         "name": "list_products",
         "title": "List products",
-        "description": "List available products in the Bian Bumbu catalog (name, price, unit, category, stock).",
+        "description": "List available products in the ButuhSayur catalog (name, price, unit, category, stock).",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,

@@ -11,7 +11,7 @@ const Footer = () => {
               <div className="w-10 h-10 bg-primary-foreground rounded-full flex items-center justify-center">
                 <span className="text-xl">🌿</span>
               </div>
-              <span className="font-display text-2xl font-bold">Bian Bumbu</span>
+              <span className="font-display text-2xl font-bold">ButuhSayur</span>
             </div>
             <p className="text-primary-foreground/80 text-sm mb-4">
               Menyediakan sayur, bumbu, dan bahan makanan segar berkualitas untuk kebutuhan dapur Anda sehari-hari.
@@ -87,7 +87,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center">
           <p className="text-primary-foreground/60 text-sm">
-            © 2024 Bian Bumbu. Semua hak dilindungi.
+            © 2024 ButuhSayur. Semua hak dilindungi.
           </p>
         </div>
       </div>

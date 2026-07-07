@@ -1,5 +1,5 @@
 -- =====================================================================
--- BIAN BUMBU — Fresh Start Migration (manual, untuk Supabase project baru)
+-- BUTUHSAYUR — Fresh Start Migration (manual, untuk Supabase project baru)
 -- Jalankan SELURUH file ini di SQL Editor dashboard Supabase barumu.
 -- JANGAN dijalankan di Lovable Cloud DB.
 -- =====================================================================
