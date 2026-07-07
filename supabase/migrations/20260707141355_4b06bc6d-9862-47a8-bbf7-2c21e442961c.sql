@@ -1,0 +1,1 @@
+UPDATE public.products SET in_stock = true WHERE stock > 0;
