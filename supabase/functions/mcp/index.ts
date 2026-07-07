@@ -12,7 +12,7 @@ import { z } from "npm:zod@^3.25.76";
 var list_products_default = defineTool({
   name: "list_products",
   title: "List products",
-  description: "List available products in the Bian Bumbu catalog (name, price, unit, category, stock).",
+  description: "List available products in the ButuhSayur catalog (name, price, unit, category, stock).",
   inputSchema: {
     category: z.string().optional().describe("Optional category filter, e.g. 'bumbu', 'sayur'."),
     limit: z.number().int().min(1).max(100).default(50)
@@ -80,10 +80,10 @@ var get_product_default = defineTool2({
 
 // src/lib/mcp/index.ts
 var mcp_default = defineMcp({
-  name: "bian-bumbu-mcp",
-  title: "Bian Bumbu MCP",
+  name: "butuhsayur-mcp",
+  title: "ButuhSayur MCP",
   version: "0.1.0",
-  instructions: "Tools for the Bian Bumbu online store. Use `list_products` to browse the catalog and `get_product` to fetch details for a specific product by ID. Delivery is limited to Bandung.",
+  instructions: "Tools for the ButuhSayur online store. Use `list_products` to browse the catalog and `get_product` to fetch details for a specific product by ID. Delivery is limited to Bandung.",
   tools: [list_products_default, get_product_default]
 });
 

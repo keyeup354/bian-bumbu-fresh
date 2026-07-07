@@ -28,7 +28,7 @@ const AddressGate = ({ onSubmit }: AddressGateProps) => {
             <span className="text-4xl">🌿</span>
           </div>
           <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-2">
-            Bian Bumbu
+            ButuhSayur
           </h1>
           <p className="text-white/80">Sayur & Bumbu Segar Berkualitas</p>
         </div>

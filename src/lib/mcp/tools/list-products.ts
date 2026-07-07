@@ -8,7 +8,7 @@ export default defineTool({
   name: "list_products",
   title: "List products",
   description:
-    "List available products in the Bian Bumbu catalog (name, price, unit, category, stock).",
+    "List available products in the ButuhSayur catalog (name, price, unit, category, stock).",
   inputSchema: {
     category: z
       .string()

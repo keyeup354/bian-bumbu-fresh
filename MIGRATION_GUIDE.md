@@ -1,6 +1,6 @@
 # Migration Guide — Pindah ke Supabase Project Baru
 
-Panduan untuk men-deploy backend Bian Bumbu ke project Supabase milikmu sendiri (di luar Lovable Cloud).
+Panduan untuk men-deploy backend ButuhSayur ke project Supabase milikmu sendiri (di luar Lovable Cloud).
 
 > ⚠️ **Penting:** Lovable Cloud tetap aktif di project ini dan tidak bisa di-disconnect. Berarti **preview di lovable.dev** akan tetap menunjuk ke DB Lovable Cloud (lama). Yang akan pakai DB baru hanya **deployment Vercel** kamu (karena env vars di Vercel sudah kamu override).
 
