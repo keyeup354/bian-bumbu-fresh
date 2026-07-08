@@ -11,7 +11,42 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://bian-bumbu.lovable.app/product/s2</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bian-bumbu.lovable.app/product/v6</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bian-bumbu.lovable.app/product/66466f8e-0145-446e-bba4-a1b3a2e0f159</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bian-bumbu.lovable.app/product/p2</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bian-bumbu.lovable.app/product/v2</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://bian-bumbu.lovable.app/product/v1</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bian-bumbu.lovable.app/product/e1</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bian-bumbu.lovable.app/product/v5</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -26,42 +61,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bian-bumbu.lovable.app/product/66466f8e-0145-446e-bba4-a1b3a2e0f159</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://bian-bumbu.lovable.app/product/e1</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://bian-bumbu.lovable.app/product/p2</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://bian-bumbu.lovable.app/product/v3</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://bian-bumbu.lovable.app/product/v5</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://bian-bumbu.lovable.app/product/v6</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://bian-bumbu.lovable.app/product/s2</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://bian-bumbu.lovable.app/product/v2</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
