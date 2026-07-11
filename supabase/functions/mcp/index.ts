@@ -56,22 +56,17 @@ var list_products_default = defineTool({
 
 // src/lib/mcp/tools/get-product.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.90.1";
 import { z as z2 } from "npm:zod@^3.25.76";
 var get_product_default = defineTool2({
   name: "get_product",
   title: "Get product",
   description: "Fetch full details for a single product by its ID.",
   inputSchema: {
-    id: z2.string().uuid().describe("Product UUID.")
+    id: z2.string().describe("Product UUID or string ID.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ id }) => {
-    const supabase = createClient2(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+  handler: async ({ id }, ctx) => {
+    const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
     if (error) {
       return {

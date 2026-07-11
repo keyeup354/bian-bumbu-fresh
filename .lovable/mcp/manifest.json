@@ -54,8 +54,7 @@
           "properties": {
             "id": {
               "type": "string",
-              "format": "uuid",
-              "description": "Product UUID."
+              "description": "Product UUID or string ID."
             }
           },
           "required": [
