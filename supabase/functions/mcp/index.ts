@@ -3,7 +3,7 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/tools/list-products.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
@@ -24,6 +24,30 @@ function supabaseForUser(ctx) {
       }
     }
   );
+}
+async function isAdmin(ctx) {
+  if (!ctx.isAuthenticated()) return false;
+  const userId = ctx.getUserId();
+  if (!userId) return false;
+  const supabase = supabaseForUser(ctx);
+  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+  if (error) {
+    console.error("Error checking admin role:", error);
+    return false;
+  }
+  return !!data;
+}
+function notAuthenticatedResponse() {
+  return {
+    content: [{ type: "text", text: "Not authenticated. Please connect via OAuth first." }],
+    isError: true
+  };
+}
+function notAdminResponse() {
+  return {
+    content: [{ type: "text", text: "Admin role required." }],
+    isError: true
+  };
 }
 
 // src/lib/mcp/tools/list-products.ts
@@ -87,13 +111,433 @@ var get_product_default = defineTool2({
   }
 });
 
+// src/lib/mcp/tools/create-product.ts
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z3 } from "npm:zod@^3.25.76";
+var create_product_default = defineTool3({
+  name: "create_product",
+  title: "Create product",
+  description: "Create a new product in the ButuhSayur catalog. Admin only.",
+  inputSchema: {
+    name: z3.string().min(1).describe("Product name, e.g. 'Bayam Merah'."),
+    price: z3.number().positive().describe("Price in IDR."),
+    unit: z3.string().min(1).default("pack").describe("Unit, e.g. 'pack', 'kg', 'ikat'."),
+    category: z3.string().min(1).describe("Category, e.g. 'vegetables', 'bumbu', 'fruit'."),
+    description: z3.string().optional().describe("Product description."),
+    stock: z3.number().int().min(0).default(100).describe("Initial stock quantity."),
+    image_url: z3.string().url().optional().describe("Primary image URL."),
+    is_featured: z3.boolean().default(false).describe("Whether to feature this product."),
+    is_flash_sale: z3.boolean().default(false).describe("Whether this is a flash sale product."),
+    flash_sale_price: z3.number().positive().optional().describe("Flash sale price in IDR."),
+    flash_sale_ends_at: z3.string().optional().describe("Flash sale end time (ISO 8601)."),
+    health_benefits: z3.string().optional().describe("Health benefits text.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("products").insert({
+      name: input.name,
+      price: input.price,
+      unit: input.unit,
+      category: input.category,
+      description: input.description,
+      stock: input.stock,
+      image_url: input.image_url,
+      is_featured: input.is_featured,
+      is_flash_sale: input.is_flash_sale,
+      flash_sale_price: input.flash_sale_price,
+      flash_sale_ends_at: input.flash_sale_ends_at,
+      health_benefits: input.health_benefits,
+      in_stock: input.stock > 0
+    }).select().single();
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Product created: ${JSON.stringify(data, null, 2)}` }],
+      structuredContent: { product: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-product.ts
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z4 } from "npm:zod@^3.25.76";
+var update_product_default = defineTool4({
+  name: "update_product",
+  title: "Update product",
+  description: "Update an existing product in the ButuhSayur catalog. Admin only.",
+  inputSchema: {
+    id: z4.string().min(1).describe("Product ID to update."),
+    name: z4.string().min(1).optional().describe("New product name."),
+    price: z4.number().positive().optional().describe("New price in IDR."),
+    unit: z4.string().min(1).optional().describe("New unit."),
+    category: z4.string().min(1).optional().describe("New category."),
+    description: z4.string().optional().describe("New description."),
+    stock: z4.number().int().min(0).optional().describe("New stock quantity."),
+    image_url: z4.string().url().optional().describe("New primary image URL."),
+    is_featured: z4.boolean().optional().describe("Whether to feature this product."),
+    is_flash_sale: z4.boolean().optional().describe("Whether this is a flash sale product."),
+    flash_sale_price: z4.number().positive().optional().describe("Flash sale price in IDR."),
+    flash_sale_ends_at: z4.string().optional().describe("Flash sale end time (ISO 8601)."),
+    in_stock: z4.boolean().optional().describe("Whether the product is in stock."),
+    health_benefits: z4.string().optional().describe("Health benefits text.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const { id, ...updates } = input;
+    const updateData = { ...updates };
+    if (typeof updates.stock === "number") {
+      updateData.in_stock = updates.stock > 0;
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("products").update(updateData).eq("id", id).select().single();
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Product updated: ${JSON.stringify(data, null, 2)}` }],
+      structuredContent: { product: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/delete-product.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z5 } from "npm:zod@^3.25.76";
+var delete_product_default = defineTool5({
+  name: "delete_product",
+  title: "Delete product",
+  description: "Delete a product from the ButuhSayur catalog. Admin only.",
+  inputSchema: {
+    id: z5.string().min(1).describe("Product ID to delete.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ id }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Product ${id} deleted successfully.` }]
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-stock.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z6 } from "npm:zod@^3.25.76";
+var update_stock_default = defineTool6({
+  name: "update_stock",
+  title: "Update stock",
+  description: "Set the stock quantity for a product. Admin only.",
+  inputSchema: {
+    id: z6.string().min(1).describe("Product ID."),
+    new_stock: z6.number().int().min(0).describe("New stock quantity.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ id, new_stock }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("products").update({ stock: new_stock, in_stock: new_stock > 0 }).eq("id", id).select().single();
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Stock updated: ${JSON.stringify(data, null, 2)}` }],
+      structuredContent: { product: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-orders.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z7 } from "npm:zod@^3.25.76";
+var list_orders_default = defineTool7({
+  name: "list_orders",
+  title: "List orders",
+  description: "List customer orders in ButuhSayur. Admin only.",
+  inputSchema: {
+    status: z7.enum(["pending", "processing", "completed", "cancelled"]).optional().describe("Filter by status."),
+    limit: z7.number().int().min(1).max(100).default(50).describe("Maximum number of orders.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ status, limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    let query = supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(limit);
+    if (status) query = query.eq("status", status);
+    const { data, error } = await query;
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      structuredContent: { orders: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-order.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z8 } from "npm:zod@^3.25.76";
+var get_order_default = defineTool8({
+  name: "get_order",
+  title: "Get order",
+  description: "Fetch full details for a single order by its ID. Admin only.",
+  inputSchema: {
+    id: z8.string().uuid().describe("Order UUID.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ id }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    if (!data) {
+      return {
+        content: [{ type: "text", text: "Order not found" }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      structuredContent: { order: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-order-status.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z9 } from "npm:zod@^3.25.76";
+var update_order_status_default = defineTool9({
+  name: "update_order_status",
+  title: "Update order status",
+  description: "Change the status of an order. Admin only.",
+  inputSchema: {
+    id: z9.string().uuid().describe("Order UUID."),
+    status: z9.enum(["pending", "processing", "completed", "cancelled"]).describe("New status."),
+    notes: z9.string().optional().describe("Optional notes to append.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ id, status, notes }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    const updateData = { status };
+    if (notes) {
+      const { data: existing } = await supabase.from("orders").select("notes").eq("id", id).maybeSingle();
+      const existingNotes = existing?.notes ?? "";
+      updateData.notes = existingNotes ? `${existingNotes}
+${notes}` : notes;
+    }
+    const { data, error } = await supabase.from("orders").update(updateData).eq("id", id).select().single();
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Order status updated: ${JSON.stringify(data, null, 2)}` }],
+      structuredContent: { order: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-promotions.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z10 } from "npm:zod@^3.25.76";
+var list_promotions_default = defineTool10({
+  name: "list_promotions",
+  title: "List promotions",
+  description: "List promotions in ButuhSayur. Admin only.",
+  inputSchema: {
+    limit: z10.number().int().min(1).max(100).default(50).describe("Maximum number of promotions.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("promotions").select("*").order("created_at", { ascending: false }).limit(limit);
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      structuredContent: { promotions: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-promotion.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z11 } from "npm:zod@^3.25.76";
+var create_promotion_default = defineTool11({
+  name: "create_promotion",
+  title: "Create promotion",
+  description: "Create a new promotion in ButuhSayur. Admin only.",
+  inputSchema: {
+    title: z11.string().min(1).describe("Promotion title."),
+    description: z11.string().optional().describe("Promotion description."),
+    discount_percentage: z11.number().int().min(0).max(100).optional().describe("Discount percentage."),
+    banner_image_url: z11.string().url().optional().describe("Banner image URL."),
+    is_active: z11.boolean().default(true).describe("Whether the promotion is active."),
+    starts_at: z11.string().optional().describe("Start time (ISO 8601)."),
+    ends_at: z11.string().optional().describe("End time (ISO 8601).")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("promotions").insert({
+      title: input.title,
+      description: input.description,
+      discount_percentage: input.discount_percentage,
+      banner_image_url: input.banner_image_url,
+      is_active: input.is_active,
+      starts_at: input.starts_at,
+      ends_at: input.ends_at
+    }).select().single();
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Promotion created: ${JSON.stringify(data, null, 2)}` }],
+      structuredContent: { promotion: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-promotion.ts
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z12 } from "npm:zod@^3.25.76";
+var update_promotion_default = defineTool12({
+  name: "update_promotion",
+  title: "Update promotion",
+  description: "Update an existing promotion in ButuhSayur. Admin only.",
+  inputSchema: {
+    id: z12.string().uuid().describe("Promotion UUID."),
+    title: z12.string().min(1).optional().describe("New title."),
+    description: z12.string().optional().describe("New description."),
+    discount_percentage: z12.number().int().min(0).max(100).optional().describe("New discount percentage."),
+    banner_image_url: z12.string().url().optional().describe("New banner image URL."),
+    is_active: z12.boolean().optional().describe("New active status."),
+    starts_at: z12.string().optional().describe("New start time (ISO 8601)."),
+    ends_at: z12.string().optional().describe("New end time (ISO 8601).")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const { id, ...updates } = input;
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("promotions").update(updates).eq("id", id).select().single();
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Promotion updated: ${JSON.stringify(data, null, 2)}` }],
+      structuredContent: { promotion: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/delete-promotion.ts
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z13 } from "npm:zod@^3.25.76";
+var delete_promotion_default = defineTool13({
+  name: "delete_promotion",
+  title: "Delete promotion",
+  description: "Delete a promotion from ButuhSayur. Admin only.",
+  inputSchema: {
+    id: z13.string().uuid().describe("Promotion UUID to delete.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ id }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticatedResponse();
+    if (!await isAdmin(ctx)) return notAdminResponse();
+    const supabase = supabaseForUser(ctx);
+    const { error } = await supabase.from("promotions").delete().eq("id", id);
+    if (error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Promotion ${id} deleted successfully.` }]
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
+var projectRef = "ukyiourqpkrlxbuzwzjq";
 var mcp_default = defineMcp({
   name: "butuhsayur-mcp",
   title: "ButuhSayur MCP",
-  version: "0.1.0",
-  instructions: "Tools for the ButuhSayur online store. Use `list_products` to browse the catalog and `get_product` to fetch details for a specific product by ID. Delivery is limited to Bandung.",
-  tools: [list_products_default, get_product_default]
+  version: "0.2.0",
+  instructions: "Tools for the ButuhSayur online store. Use catalog tools to browse products. Admin tools (create/update/delete products, manage stock, orders, and promotions) require an authenticated user with the admin role. Delivery is limited to Bandung.",
+  auth: auth.oauth.issuer({
+    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    acceptedAudiences: "authenticated"
+  }),
+  tools: [
+    list_products_default,
+    get_product_default,
+    create_product_default,
+    update_product_default,
+    delete_product_default,
+    update_stock_default,
+    list_orders_default,
+    get_order_default,
+    update_order_status_default,
+    list_promotions_default,
+    create_promotion_default,
+    update_promotion_default,
+    delete_promotion_default
+  ]
 });
 
 // lovable-mcp-supabase-entry.ts

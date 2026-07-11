@@ -3,12 +3,16 @@
   "sdk_version": "0.20.0",
   "path": "/functions/v1/mcp",
   "auth": {
-    "type": "none"
+    "type": "oauth",
+    "issuer": "https://ukyiourqpkrlxbuzwzjq.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
   },
   "mcp": {
     "server": {
       "name": "butuhsayur-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "ButuhSayur MCP"
     },
     "tools": [
@@ -55,6 +59,496 @@
             "id": {
               "type": "string",
               "description": "Product UUID or string ID."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_product",
+        "title": "Create product",
+        "description": "Create a new product in the ButuhSayur catalog. Admin only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product name, e.g. 'Bayam Merah'."
+            },
+            "price": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Price in IDR."
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1,
+              "default": "pack",
+              "description": "Unit, e.g. 'pack', 'kg', 'ikat'."
+            },
+            "category": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Category, e.g. 'vegetables', 'bumbu', 'fruit'."
+            },
+            "description": {
+              "type": "string",
+              "description": "Product description."
+            },
+            "stock": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 100,
+              "description": "Initial stock quantity."
+            },
+            "image_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Primary image URL."
+            },
+            "is_featured": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether to feature this product."
+            },
+            "is_flash_sale": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether this is a flash sale product."
+            },
+            "flash_sale_price": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Flash sale price in IDR."
+            },
+            "flash_sale_ends_at": {
+              "type": "string",
+              "description": "Flash sale end time (ISO 8601)."
+            },
+            "health_benefits": {
+              "type": "string",
+              "description": "Health benefits text."
+            }
+          },
+          "required": [
+            "name",
+            "price",
+            "category"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_product",
+        "title": "Update product",
+        "description": "Update an existing product in the ButuhSayur catalog. Admin only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product ID to update."
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "New product name."
+            },
+            "price": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "New price in IDR."
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1,
+              "description": "New unit."
+            },
+            "category": {
+              "type": "string",
+              "minLength": 1,
+              "description": "New category."
+            },
+            "description": {
+              "type": "string",
+              "description": "New description."
+            },
+            "stock": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "New stock quantity."
+            },
+            "image_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "New primary image URL."
+            },
+            "is_featured": {
+              "type": "boolean",
+              "description": "Whether to feature this product."
+            },
+            "is_flash_sale": {
+              "type": "boolean",
+              "description": "Whether this is a flash sale product."
+            },
+            "flash_sale_price": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Flash sale price in IDR."
+            },
+            "flash_sale_ends_at": {
+              "type": "string",
+              "description": "Flash sale end time (ISO 8601)."
+            },
+            "in_stock": {
+              "type": "boolean",
+              "description": "Whether the product is in stock."
+            },
+            "health_benefits": {
+              "type": "string",
+              "description": "Health benefits text."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_product",
+        "title": "Delete product",
+        "description": "Delete a product from the ButuhSayur catalog. Admin only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product ID to delete."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_stock",
+        "title": "Update stock",
+        "description": "Set the stock quantity for a product. Admin only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product ID."
+            },
+            "new_stock": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "New stock quantity."
+            }
+          },
+          "required": [
+            "id",
+            "new_stock"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_orders",
+        "title": "List orders",
+        "description": "List customer orders in ButuhSayur. Admin only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "processing",
+                "completed",
+                "cancelled"
+              ],
+              "description": "Filter by status."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "description": "Maximum number of orders."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_order",
+        "title": "Get order",
+        "description": "Fetch full details for a single order by its ID. Admin only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Order UUID."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_order_status",
+        "title": "Update order status",
+        "description": "Change the status of an order. Admin only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Order UUID."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "processing",
+                "completed",
+                "cancelled"
+              ],
+              "description": "New status."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Optional notes to append."
+            }
+          },
+          "required": [
+            "id",
+            "status"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_promotions",
+        "title": "List promotions",
+        "description": "List promotions in ButuhSayur. Admin only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "description": "Maximum number of promotions."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_promotion",
+        "title": "Create promotion",
+        "description": "Create a new promotion in ButuhSayur. Admin only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Promotion title."
+            },
+            "description": {
+              "type": "string",
+              "description": "Promotion description."
+            },
+            "discount_percentage": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Discount percentage."
+            },
+            "banner_image_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Banner image URL."
+            },
+            "is_active": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether the promotion is active."
+            },
+            "starts_at": {
+              "type": "string",
+              "description": "Start time (ISO 8601)."
+            },
+            "ends_at": {
+              "type": "string",
+              "description": "End time (ISO 8601)."
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_promotion",
+        "title": "Update promotion",
+        "description": "Update an existing promotion in ButuhSayur. Admin only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Promotion UUID."
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "description": "New title."
+            },
+            "description": {
+              "type": "string",
+              "description": "New description."
+            },
+            "discount_percentage": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "New discount percentage."
+            },
+            "banner_image_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "New banner image URL."
+            },
+            "is_active": {
+              "type": "boolean",
+              "description": "New active status."
+            },
+            "starts_at": {
+              "type": "string",
+              "description": "New start time (ISO 8601)."
+            },
+            "ends_at": {
+              "type": "string",
+              "description": "New end time (ISO 8601)."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_promotion",
+        "title": "Delete promotion",
+        "description": "Delete a promotion from ButuhSayur. Admin only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Promotion UUID to delete."
             }
           },
           "required": [
