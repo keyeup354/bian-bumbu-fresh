@@ -7,8 +7,26 @@ import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/tools/list-products.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { createClient } from "npm:@supabase/supabase-js@^2.90.1";
 import { z } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/supabase-client.ts
+import { createClient } from "npm:@supabase/supabase-js@^2.90.1";
+function supabaseForUser(ctx) {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${ctx.getToken()}`
+        }
+      }
+    }
+  );
+}
+
+// src/lib/mcp/tools/list-products.ts
 var list_products_default = defineTool({
   name: "list_products",
   title: "List products",
@@ -18,12 +36,8 @@ var list_products_default = defineTool({
     limit: z.number().int().min(1).max(100).default(50)
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ category, limit }) => {
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+  handler: async ({ category, limit }, ctx) => {
+    const supabase = supabaseForUser(ctx);
     let query = supabase.from("products").select("id,name,price,unit,category,stock,in_stock,description").eq("in_stock", true).limit(limit);
     if (category) query = query.eq("category", category);
     const { data, error } = await query;
