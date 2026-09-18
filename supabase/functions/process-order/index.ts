@@ -60,38 +60,45 @@ function validateItems(items: unknown): items is OrderItem[] {
   );
 }
 
-// Rate limiting configuration (DISABLED FOR TESTING)
-const RATE_LIMIT_ENABLED = false; // Set to true to enable rate limiting
-const RATE_LIMIT_MAX_ORDERS = 5;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+// Rate limiting configuration
+const RATE_LIMIT_ENABLED = true;
+const RATE_LIMIT_MAX_ORDERS = 2; // max 2 orders
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // per 1 hour
 
-// Check rate limit for phone number
+// Extract the client IP silently from proxy headers
+function getClientIp(req: Request): string {
+  const fwd = req.headers.get('x-forwarded-for') || '';
+  const ip = fwd.split(',')[0].trim() || req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || '';
+  return ip.slice(0, 64);
+}
+
+// Check rate limit per phone number AND per IP address
 // deno-lint-ignore no-explicit-any
-async function checkRateLimit(phone: string, supabase: any): Promise<boolean> {
-  // Rate limiting disabled for testing
-  if (!RATE_LIMIT_ENABLED) {
-    console.log('Rate limiting is DISABLED for testing');
-    return true;
-  }
-  
-  const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
-  
-  // Normalize phone number for consistent matching
+async function checkRateLimit(phone: string, ip: string, supabase: any): Promise<boolean> {
+  if (!RATE_LIMIT_ENABLED) return true;
+
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
   const normalizedPhone = phone.replace(/[\s-]/g, '');
-  
+
+  const filters = [`customer_phone.eq.${normalizedPhone}`];
+  if (ip) filters.push(`ip_address.eq.${ip}`);
+
   const { data, error } = await supabase
     .from('orders')
-    .select('id')
-    .eq('customer_phone', normalizedPhone)
-    .gte('created_at', oneHourAgo);
-  
+    .select('id, customer_phone, ip_address')
+    .gte('created_at', since)
+    .or(filters.join(','));
+
   if (error) {
     console.error('Rate limit check error:', error);
     // Fail open - allow the request if rate limit check fails
     return true;
   }
-  
-  return !data || data.length < RATE_LIMIT_MAX_ORDERS;
+
+  const byPhone = (data || []).filter((o: { customer_phone: string }) => o.customer_phone === normalizedPhone).length;
+  const byIp = ip ? (data || []).filter((o: { ip_address: string | null }) => o.ip_address === ip).length : 0;
+
+  return byPhone < RATE_LIMIT_MAX_ORDERS && byIp < RATE_LIMIT_MAX_ORDERS;
 }
 
 
@@ -159,11 +166,12 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check rate limit - limit to 5 orders per phone number per hour
-    const withinRateLimit = await checkRateLimit(customerPhone, supabase);
+    // Check rate limit - max 2 orders per phone number and per IP per hour
+    const clientIp = getClientIp(req);
+    const withinRateLimit = await checkRateLimit(customerPhone, clientIp, supabase);
     if (!withinRateLimit) {
       return new Response(
-        JSON.stringify({ error: 'Too many orders. Please wait before placing another order.' }),
+        JSON.stringify({ error: 'Terlalu banyak pesanan dari perangkat ini. Mohon tunggu 1 jam sebelum mencoba lagi untuk menghindari spam.' }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -254,6 +262,7 @@ Deno.serve(async (req) => {
         total_amount: totalAmount,
         notes: notes,
         status: 'pending',
+        ip_address: clientIp || null,
       })
       .select()
       .single();
