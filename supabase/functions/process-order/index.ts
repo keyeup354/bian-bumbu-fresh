@@ -262,6 +262,7 @@ Deno.serve(async (req) => {
         total_amount: totalAmount,
         notes: notes,
         status: 'pending',
+        ip_address: clientIp || null,
       })
       .select()
       .single();
