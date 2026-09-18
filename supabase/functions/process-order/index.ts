@@ -166,11 +166,12 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check rate limit - limit to 5 orders per phone number per hour
-    const withinRateLimit = await checkRateLimit(customerPhone, supabase);
+    // Check rate limit - max 2 orders per phone number and per IP per hour
+    const clientIp = getClientIp(req);
+    const withinRateLimit = await checkRateLimit(customerPhone, clientIp, supabase);
     if (!withinRateLimit) {
       return new Response(
-        JSON.stringify({ error: 'Too many orders. Please wait before placing another order.' }),
+        JSON.stringify({ error: 'Terlalu banyak pesanan dari perangkat ini. Mohon tunggu 1 jam sebelum mencoba lagi untuk menghindari spam.' }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
