@@ -81,7 +81,17 @@ const CartSlideout = () => {
 
       if (error) {
         console.error('Order submission error:', error);
-        toast.error('Gagal mengirim pesanan. Silakan coba lagi.');
+        let serverMessage = '';
+        try {
+          const res = (error as { context?: Response }).context;
+          if (res && typeof res.json === 'function') {
+            const body = await res.json();
+            serverMessage = body?.error || '';
+          }
+        } catch {
+          // ignore parse failures
+        }
+        toast.error(serverMessage || 'Gagal mengirim pesanan. Silakan coba lagi.');
         return;
       }
 
