@@ -21,6 +21,7 @@ export type Database = {
           customer_phone: string
           delivery_address: string
           id: string
+          ip_address: string | null
           items: Json
           notes: string | null
           status: string
@@ -32,6 +33,7 @@ export type Database = {
           customer_phone: string
           delivery_address: string
           id?: string
+          ip_address?: string | null
           items: Json
           notes?: string | null
           status?: string
@@ -43,6 +45,7 @@ export type Database = {
           customer_phone?: string
           delivery_address?: string
           id?: string
+          ip_address?: string | null
           items?: Json
           notes?: string | null
           status?: string
